@@ -3,7 +3,6 @@
 <nta>
 	<declaration>// Place global declarations here.
 
-
 typedef struct {
     int row;
     int col;
@@ -99,7 +98,7 @@ pod pods[NUM_OF_PODS] = {
     {{9, 3}, false},
     {{9, 4}, false},
     {{9, 5}, false}
-}
+};
 
 position nextPositions[NUM_OF_ROBOTS] = {
     createPosition(-1, -1),
