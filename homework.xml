@@ -80,16 +80,15 @@ const position nextPositions[NUM_OF_ROBOTS] = {
     createPosition(-1, -1)
 }; // set by each robot, read by the semaphore
 
-<<<<<<< HEAD
+
 chan go, takeItem, claim, noTask, releaseTask;</declaration>
-=======
+
 
 /*************************************/
 /*       Channels declaration        */
 /*************************************/
 
-chan go, takeItem;</declaration>
->>>>>>> bcd7c692a10aa500733eaec6f5bf6255715b0785
+
 	<template>
 		<name>Semaphore</name>
 		<location id="id0" x="0" y="0">
