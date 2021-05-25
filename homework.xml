@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
+<nta>
+	<declaration>// Place global declarations here.
+
+
+typedef struct {
+    int row;
+    int col;
+} position;
+
+typedef struct {
+    position pos;
+    bool taken;
+} pod;
+
+
+position createPosition(int row, int col) {
+    position pos;
+    pos.row = row;
+    pos.col = col;
+    return pos;
+}
+
+/*void initPodPositions() // position&amp; podsPositions[30], int&amp; podRows[30], int&amp; podCols[30], int numOfPods
+{
+  for (i : int[0,30]) 
+  {
+    podsPositions2[i] = createPosition(1, 1);
+  }
+
+  
+}*/
+
+//initPodPositions();
+
+
+const int N = 10;
+const int M = 10;
+
+const int NUM_OF_PODS = 30;
+
+const int ROW_ENTRY_POINT = 0;
+const int COL_ENTRY_POINT = 9;
+const int ROW_DELIVERY_POINT = 9;
+const int COL_DELIVERY_POINT = 9;
+const int NUM_OF_ROBOTS = 3;
+
+const int EMPTY = 0;
+const int ROBOT = 1;
+const int POD = 2;
+
+
+position entryPoint = createPosition(ROW_ENTRY_POINT, COL_ENTRY_POINT);
+position deliveryPoint = createPosition(ROW_DELIVERY_POINT, COL_DELIVERY_POINT);
+
+
+int grid[N][M] = {
+    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
+    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
+    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
+    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
+    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
+    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}
+};
+
+pod pods[NUM_OF_PODS] = {
+    {{1, 0}, false},
+    {{1, 1}, false},
+    {{1, 2}, false},
+    {{1, 3}, false},
+    {{1, 4}, false},
+    {{1, 5}, false},
+    {{3, 0}, false},
+    {{3, 1}, false},
+    {{3, 2}, false},
+    {{3, 3}, false},
+    {{3, 4}, false},
+    {{3, 5}, false},
+    {{5, 0}, false},
+    {{5, 1}, false},
+    {{5, 2}, false},
+    {{5, 3}, false},
+    {{5, 4}, false},
+    {{5, 5}, false},
+    {{7, 0}, false},
+    {{7, 1}, false},
+    {{7, 2}, false},
+    {{7, 3}, false},
+    {{7, 4}, false},
+    {{7, 5}, false},
+    {{9, 0}, false},
+    {{9, 1}, false},
+    {{9, 2}, false},
+    {{9, 3}, false},
+    {{9, 4}, false},
+    {{9, 5}, false}
+}
+
+position nextPositions[NUM_OF_ROBOTS] = {
+    createPosition(-1, -1),
+    createPosition(-1, -1),
+    createPosition(-1, -1)
+}; // set by each robot, read by the semaphore
+</declaration>
+	<template>
+		<name>Semaphore</name>
+		<location id="id0" x="0" y="0">
+		</location>
+		<init ref="id0"/>
+	</template>
+	<template>
+		<name>Human</name>
+		<location id="id1" x="0" y="0">
+		</location>
+		<init ref="id1"/>
+	</template>
+	<template>
+		<name>Robot</name>
+		<parameter>int entryPoint, int deliveryPoint</parameter>
+		<location id="id2" x="0" y="0">
+		</location>
+		<init ref="id2"/>
+	</template>
+	<template>
+		<name>TaskManager</name>
+		<location id="id3" x="0" y="0">
+		</location>
+		<init ref="id3"/>
+	</template>
+	<system>// Place template instantiations here.
+
+h = Human();
+
+// List one or more processes to be composed into a system.
+system h;
+    </system>
+	<queries>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+	</queries>
+</nta>
