@@ -106,7 +106,7 @@ position nextPositions[NUM_OF_ROBOTS] = {
     createPosition(-1, -1)
 }; // set by each robot, read by the semaphore
 
-chan go, takeItem;</declaration>
+chan go, takeItem, claim, noTask, releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
 		<location id="id0" x="0" y="0">
@@ -149,9 +149,56 @@ chan go, takeItem;</declaration>
 	</template>
 	<template>
 		<name>TaskManager</name>
-		<location id="id4" x="0" y="0">
+		<parameter>int T, int MAX_T</parameter>
+		<declaration>clock t;
+
+//adding a task
+void addTask() {}
+
+//estract a task from the queue
+void takeTask() {}</declaration>
+		<location id="id4" x="-229" y="-119">
+			<name x="-239" y="-153">Idle</name>
+		</location>
+		<location id="id5" x="25" y="-119">
+			<name x="42" y="-127">Adding_task</name>
+			<committed/>
+		</location>
+		<location id="id6" x="-229" y="93">
+			<name x="-272" y="110">Releasing_task</name>
+			<committed/>
 		</location>
 		<init ref="id4"/>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-391" y="-17">releaseTask!</label>
+			<nail x="-323" y="-8"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id4"/>
+			<label kind="synchronisation" x="-272" y="-17">noTask!</label>
+			<nail x="-280" y="-8"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id6"/>
+			<label kind="synchronisation" x="-170" y="-8">claim?</label>
+			<nail x="-170" y="-8"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id4"/>
+			<label kind="assignment" x="-119" y="-42">t = 0, addTask()</label>
+			<nail x="-110" y="-42"/>
+		</transition>
+		<transition>
+			<source ref="id4"/>
+			<target ref="id5"/>
+			<label kind="guard" x="-127" y="-204">t &gt;= T</label>
+			<nail x="-110" y="-187"/>
+		</transition>
 	</template>
 	<system>// Place template instantiations here.
 
