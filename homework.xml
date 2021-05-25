@@ -80,15 +80,14 @@ const position nextPositions[NUM_OF_ROBOTS] = {
     createPosition(-1, -1)
 }; // set by each robot, read by the semaphore
 
+const int MAX_T = 50;
 
-chan go, takeItem, claim, noTask, releaseTask;</declaration>
+chan go, takeItem, claim, noTask, releaseTask;
 
 
 /*************************************/
 /*       Channels declaration        */
-/*************************************/
-
-
+/*************************************/</declaration>
 	<template>
 		<name>Semaphore</name>
 		<location id="id0" x="0" y="0">
@@ -131,11 +130,73 @@ chan go, takeItem, claim, noTask, releaseTask;</declaration>
 	</template>
 	<template>
 		<name>TaskManager</name>
-		<parameter>int T, int MAX_T</parameter>
+		<parameter>int T</parameter>
 		<declaration>clock t;
 
+//this is a queue which works with a FIFO policy
+position tasks[MAX_T];
+int actualLenght = 0;
+
+//This checks the position of the pod
+//to understand if the pod is the same of the pod in position i
+//inside the tasks queue
+bool checkIdentity(pod myPod, int i) {
+    if (myPod.pos.row == tasks[i].row) {
+        if (myPod.pos.col == tasks[i].col) {
+            return true;
+        }
+    }
+    return false;
+}
+
+//This verify if the pod in input is present in the queue
+//checking all the tasks array
+bool thisPodIsPresentInTasks(pod myPod) {
+    int i;
+    for (i = 0; i &lt; actualLenght; i++) {
+        if (checkIdentity(myPod, i)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+//find another "random" number adding 1 to the previous random number
+int anotherTmp(int tmp) {
+    int myTmp = tmp;
+    if (tmp == NUM_OF_PODS - 1)
+        myTmp = 0;
+    else
+        myTmp += 1;
+    return myTmp;
+}
+
+//returning the position of the selected pod from the global pods array
+//if it is not taken
+//else continuing searching until this function finds a pod to add as a task
+position selectAPod(int tmp) {
+    int myTmp = tmp;
+    bool in = true;
+    position newPos = {-1, -1};
+    while (in) {
+        if (!thisPodIsPresentInTasks(pods[myTmp])) {
+            if (!pods[myTmp].taken) {
+                newPos.row = pods[myTmp].pos.row;
+                newPos.col = pods[myTmp].pos.col;
+                in = false;
+            }
+        }
+        myTmp = anotherTmp(myTmp);
+    }
+    return newPos;
+}
+
 //adding a task
-void addTask() {}
+void addTask(int tmp) {
+    position taskPos = selectAPod(tmp);
+    actualLenght += 1;
+    tasks[actualLenght] = taskPos;
+}
 
 //estract a task from the queue
 void takeTask() {}</declaration>
@@ -172,7 +233,8 @@ void takeTask() {}</declaration>
 		<transition>
 			<source ref="id5"/>
 			<target ref="id4"/>
-			<label kind="assignment" x="-119" y="-42">t = 0, addTask()</label>
+			<label kind="select" x="-110" y="-51">tmp: int[0,NUM_OF_PODS]</label>
+			<label kind="assignment" x="-93" y="-25">t = 0, addTask(tmp)</label>
 			<nail x="-110" y="-42"/>
 		</transition>
 		<transition>
