@@ -302,11 +302,12 @@ void takePod() {
 			<source ref="id8"/>
 			<target ref="id15"/>
 			<label kind="guard" x="348" y="-263">noPossibleMoves</label>
+			<label kind="synchronisation" x="348" y="-246">noFeasibleMoves!</label>
 		</transition>
 		<transition>
 			<source ref="id14"/>
 			<target ref="id12"/>
-			<nail x="-408" y="484"/>
+			<nail x="-399" y="484"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -349,7 +350,7 @@ target = TO_POD</label>
 		<transition>
 			<source ref="id8"/>
 			<target ref="id7"/>
-			<label kind="guard" x="348" y="-51">!noPossibleMoves</label>
+			<label kind="guard" x="365" y="-51">!noPossibleMoves</label>
 			<label kind="assignment" x="348" y="-68">nextPosition = createPosition(2, 3)</label>
 		</transition>
 		<transition>
