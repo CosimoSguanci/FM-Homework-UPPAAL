@@ -92,14 +92,56 @@ position robotTask[NUM_OF_ROBOTS] = {
 
 int synchronizationRequest;
 
+position nextPosition = {-1, -1};
+
 /*************************************/
 /*       Channels declaration        */
 /*************************************/
 
-chan go, takeItem, claim;
+chan go, takeItem, claim, canMove, cannotMove;
 broadcast chan releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
+		<declaration>int index = 0;
+
+position nextPositions[NUM_OF_ROBOTS] = {
+    {-1, -1},
+    {-1, -1},
+    {-1, -1}
+};
+
+void initializeNextPositions() {
+    int i = 0;
+    for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
+        nextPositions[i].row = -1;
+        nextPositions[i].col = -1;
+    }
+}
+
+bool isAlreadyOccupiedForNextPositions(int row, int col) {
+    int i = 0;
+    for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
+        if(nextPositions[i].row == row &amp;&amp; nextPositions[i].col == col) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void setNextPosition(int row, int col) {
+    if(index == NUM_OF_ROBOTS - 1) {
+        index = 0;
+        initializeNextPositions();        
+    }
+    nextPositions[index].row = row;
+    nextPositions[index].col = col;
+    index++;
+}
+
+void incrementIndex() {
+    index++;
+}</declaration>
 		<location id="id0" x="0" y="0">
 		</location>
 		<init ref="id0"/>
