@@ -98,7 +98,7 @@ position nextPosition = {-1, -1};
 /*       Channels declaration        */
 /*************************************/
 
-chan go, takeItem, claim, canMove, cannotMove;
+chan go, takeItem, claim, canMove, cannotMove, noFeasibleMoves;
 broadcast chan releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
@@ -142,32 +142,75 @@ void setNextPosition(int row, int col) {
 void incrementIndex() {
     index++;
 }</declaration>
-		<location id="id0" x="0" y="0">
+		<location id="id0" x="-68" y="-34">
+			<committed/>
 		</location>
-		<init ref="id0"/>
+		<location id="id1" x="102" y="68">
+			<name x="92" y="34">initial_state</name>
+		</location>
+		<location id="id2" x="-17" y="195">
+			<committed/>
+		</location>
+		<init ref="id1"/>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id1"/>
+			<label kind="synchronisation" x="0" y="-94">noFeasibleMoves?</label>
+			<label kind="assignment" x="9" y="-68">incrementIndex()</label>
+			<nail x="433" y="-51"/>
+			<nail x="510" y="8"/>
+			<nail x="484" y="76"/>
+		</transition>
+		<transition>
+			<source ref="id0"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="-136" y="144">canMove?</label>
+			<nail x="-68" y="136"/>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id0"/>
+			<label kind="guard" x="-51" y="-17">grid[nextPosition.row][nextPosition.col] != EMPTY || 
+isAlreadyOccupiedForNextPositions(nextPosition.row, nextPosition.col)</label>
+			<label kind="synchronisation" x="-51" y="17">cannotMove!</label>
+		</transition>
+		<transition>
+			<source ref="id2"/>
+			<target ref="id1"/>
+			<label kind="guard" x="161" y="102">grid[nextPosition.row][nextPosition.col] == EMPTY &amp;&amp; 
+!isAlreadyOccupiedForNextPositions(nextPosition.row, nextPosition.col)</label>
+			<label kind="synchronisation" x="161" y="136">canMove!</label>
+			<label kind="assignment" x="161" y="152">setNextPosition(nextPosition.row, nextPosition.col)</label>
+			<nail x="170" y="195"/>
+		</transition>
+		<transition>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="synchronisation" x="34" y="136">canMove?</label>
+		</transition>
 	</template>
 	<template>
 		<name>Human</name>
 		<parameter>int H</parameter>
 		<declaration>clock t;</declaration>
-		<location id="id1" x="-229" y="-85">
+		<location id="id3" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
 		</location>
-		<location id="id2" x="-42" y="-85">
+		<location id="id4" x="-42" y="-85">
 			<name x="-52" y="-119">Taking_item</name>
 			<label kind="invariant" x="-52" y="-68">t &lt;= H</label>
 		</location>
-		<init ref="id1"/>
+		<init ref="id3"/>
 		<transition>
-			<source ref="id2"/>
-			<target ref="id1"/>
+			<source ref="id4"/>
+			<target ref="id3"/>
 			<label kind="guard" x="-153" y="-17">t &gt;= H</label>
 			<label kind="synchronisation" x="-144" y="0">go!</label>
 			<nail x="-136" y="-25"/>
 		</transition>
 		<transition>
-			<source ref="id1"/>
-			<target ref="id2"/>
+			<source ref="id3"/>
+			<target ref="id4"/>
 			<label kind="synchronisation" x="-170" y="-187">takeItem?</label>
 			<label kind="assignment" x="-153" y="-170">t = 0</label>
 			<nail x="-136" y="-144"/>
@@ -176,9 +219,9 @@ void incrementIndex() {
 	<template>
 		<name>Robot</name>
 		<parameter>int entryPoint, int deliveryPoint</parameter>
-		<location id="id3" x="0" y="0">
+		<location id="id5" x="0" y="0">
 		</location>
-		<init ref="id3"/>
+		<init ref="id5"/>
 	</template>
 	<template>
 		<name>TaskManager</name>
@@ -306,52 +349,52 @@ void takeTask() {
     }
     actualRobotId = -1;
 }</declaration>
-		<location id="id4" x="-229" y="-119">
+		<location id="id6" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
 			<label kind="invariant" x="-246" y="-170">t &lt;= T</label>
 		</location>
-		<location id="id5" x="25" y="-119">
+		<location id="id7" x="25" y="-119">
 			<name x="42" y="-127">Adding_task</name>
 			<committed/>
 		</location>
-		<location id="id6" x="-229" y="93">
+		<location id="id8" x="-229" y="93">
 			<name x="-272" y="110">Releasing_task</name>
 			<committed/>
 		</location>
-		<location id="id7" x="-391" y="-195">
+		<location id="id9" x="-391" y="-195">
 			<name x="-401" y="-229">SettingUp</name>
 			<committed/>
 		</location>
-		<init ref="id7"/>
+		<init ref="id9"/>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id4"/>
+			<source ref="id9"/>
+			<target ref="id6"/>
 			<label kind="assignment" x="-373" y="-157">settingUp()</label>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id4"/>
+			<source ref="id8"/>
+			<target ref="id6"/>
 			<label kind="synchronisation" x="-374" y="-17">releaseTask!</label>
 			<label kind="assignment" x="-357" y="8">takeTask()</label>
 			<nail x="-280" y="-8"/>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id6"/>
+			<source ref="id6"/>
+			<target ref="id8"/>
 			<label kind="synchronisation" x="-178" y="34">claim?</label>
 			<label kind="assignment" x="-204" y="59">actualRobotId = synchronizationRequest</label>
 			<nail x="-170" y="-8"/>
 		</transition>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id4"/>
+			<source ref="id7"/>
+			<target ref="id6"/>
 			<label kind="select" x="-110" y="-51">tmp: int[0,NUM_OF_PODS]</label>
 			<label kind="assignment" x="-93" y="-25">t = 0, addTask(tmp)</label>
 			<nail x="-110" y="-42"/>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id5"/>
+			<source ref="id6"/>
+			<target ref="id7"/>
 			<nail x="-110" y="-187"/>
 		</transition>
 	</template>
