@@ -82,12 +82,22 @@ const position nextPositions[NUM_OF_ROBOTS] = {
 
 const int MAX_T = 50;
 
-chan go, takeItem, claim, noTask, releaseTask;
+position robotTask[NUM_OF_ROBOTS] = {
+    createPosition(-1, -1),
+    createPosition(-1, -1),
+    createPosition(-1, -1)
+}; // set by taskManager, read by the robots when the broadcast channel is activate
+//every robot will read to his position and if the position is different from {-1,-1}
+//the robot will be able to move to that pod
 
+int synchronizationRequest;
 
 /*************************************/
 /*       Channels declaration        */
-/*************************************/</declaration>
+/*************************************/
+
+chan go, takeItem, claim;
+broadcast chan releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
 		<location id="id0" x="0" y="0">
@@ -133,13 +143,24 @@ chan go, takeItem, claim, noTask, releaseTask;
 		<parameter>int T</parameter>
 		<declaration>clock t;
 
-//this is a queue which works with a FIFO policy
+//this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
 position tasks[MAX_T];
-int actualLenght = 0;
+//to keep track of the actual number of task present in the tasks array
+int actualLength;
+//here there is the id of the robot which has claimed a task
+int actualRobotId;
 
-//This checks the position of the pod
-//to understand if the pod is the same of the pod in position i
-//inside the tasks queue
+//to initialize every local variable
+void settingUp() {
+    int j;
+    for (j = 0; j &lt; MAX_T; j++) {
+        tasks[j] = createPosition(-1,-1);
+    }
+    actualLength = 0;
+    actualRobotId = -1;
+}
+
+//This checks the position of the pod to understand if it is the same of the pod in position i inside the tasks queue
 bool checkIdentity(pod myPod, int i) {
     if (myPod.pos.row == tasks[i].row) {
         if (myPod.pos.col == tasks[i].col) {
@@ -149,11 +170,10 @@ bool checkIdentity(pod myPod, int i) {
     return false;
 }
 
-//This verify if the pod in input is present in the queue
-//checking all the tasks array
-bool thisPodIsPresentInTasks(pod myPod) {
+//This verify if the pod in input is present in the queue checking all the tasks array (if it is the case)
+bool thisPodPositionIsPresentInTasks(pod myPod) {
     int i;
-    for (i = 0; i &lt; actualLenght; i++) {
+    for (i = 0; i &lt; actualLength; i++) {
         if (checkIdentity(myPod, i)) {
             return true;
         }
@@ -161,7 +181,7 @@ bool thisPodIsPresentInTasks(pod myPod) {
     return false;
 }
 
-//find another "random" number adding 1 to the previous random number
+//find another "random" number adding 1 to the previous random number, keeping attention to the NUM_OF_PODS present in the layout
 int anotherTmp(int tmp) {
     int myTmp = tmp;
     if (tmp == NUM_OF_PODS - 1)
@@ -172,14 +192,14 @@ int anotherTmp(int tmp) {
 }
 
 //returning the position of the selected pod from the global pods array
-//if it is not taken
-//else continuing searching until this function finds a pod to add as a task
+//if it is not already in the tasks array and if it is not taken (a robot has taken it)
+//else continuing searching until finding a pod to add as a task (this could be a potential problem...)
 position selectAPod(int tmp) {
     int myTmp = tmp;
     bool in = true;
     position newPos = {-1, -1};
     while (in) {
-        if (!thisPodIsPresentInTasks(pods[myTmp])) {
+        if (!thisPodPositionIsPresentInTasks(pods[myTmp])) {
             if (!pods[myTmp].taken) {
                 newPos.row = pods[myTmp].pos.row;
                 newPos.col = pods[myTmp].pos.col;
@@ -191,15 +211,40 @@ position selectAPod(int tmp) {
     return newPos;
 }
 
-//adding a task
-void addTask(int tmp) {
-    position taskPos = selectAPod(tmp);
-    actualLenght += 1;
-    tasks[actualLenght] = taskPos;
+//selecting a position which corresponding to a free pod using the random value in input
+//adding it as task in the tasks array, updating the true length of it
+void addTask(int randomValue) {
+    position taskPos = selectAPod(randomValue);
+    actualLength += 1;
+    tasks[actualLength] = taskPos;
 }
 
-//estract a task from the queue
-void takeTask() {}</declaration>
+//-----------------------------------------------------------------------------------------------
+
+//extracting a position of a pod with a FIFO policy
+position extractFIFO() {
+    position tmp = tasks[0];
+    int i = 1;
+    while (i &lt; actualLength) {
+        tasks[i-1] = tasks[i];
+        i++;
+    }
+    tasks[i-1].row = -1;
+    tasks[i-1].col = -1;
+    actualLength--;
+    return tmp;
+}
+
+//estract a task from the queue and insert it in the robotTask array in the position represented by actualRobotId
+void takeTask() {
+    //if there is no task, TM will not set a position for the robot
+    if (actualLength != 0) {
+        position ext;
+        ext = extractFIFO();
+        robotTask[actualRobotId] = ext;
+    }
+    actualRobotId = -1;
+}</declaration>
 		<location id="id4" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
 		</location>
@@ -211,23 +256,28 @@ void takeTask() {}</declaration>
 			<name x="-272" y="110">Releasing_task</name>
 			<committed/>
 		</location>
-		<init ref="id4"/>
+		<location id="id7" x="-391" y="-195">
+			<name x="-401" y="-229">SettingUp</name>
+			<committed/>
+		</location>
+		<init ref="id7"/>
 		<transition>
-			<source ref="id6"/>
+			<source ref="id7"/>
 			<target ref="id4"/>
-			<label kind="synchronisation" x="-391" y="-17">releaseTask!</label>
-			<nail x="-323" y="-8"/>
+			<label kind="assignment" x="-373" y="-157">settingUp()</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id4"/>
-			<label kind="synchronisation" x="-272" y="-17">noTask!</label>
+			<label kind="synchronisation" x="-374" y="-17">releaseTask!</label>
+			<label kind="assignment" x="-357" y="8">takeTask()</label>
 			<nail x="-280" y="-8"/>
 		</transition>
 		<transition>
 			<source ref="id4"/>
 			<target ref="id6"/>
-			<label kind="synchronisation" x="-170" y="-8">claim?</label>
+			<label kind="synchronisation" x="-178" y="34">claim?</label>
+			<label kind="assignment" x="-204" y="59">actualRobotId = synchronizationRequest</label>
 			<nail x="-170" y="-8"/>
 		</transition>
 		<transition>
