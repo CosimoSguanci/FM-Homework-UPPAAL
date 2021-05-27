@@ -97,7 +97,7 @@ position nextPosition = {-1, -1};
 /*       Channels declaration        */
 /*************************************/
 
-chan go, takeItem, claim, canMove, cannotMove, noFeasibleMoves;
+chan go, takeItem, claim, canMove, cannotMove, noFeasibleMoves, tryingToMove;
 broadcast chan releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
@@ -185,7 +185,7 @@ isAlreadyOccupiedForNextPositions(nextPosition.row, nextPosition.col)</label>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="34" y="136">canMove?</label>
+			<label kind="synchronisation" x="34" y="136">tryingToMove?</label>
 		</transition>
 	</template>
 	<template>
@@ -217,8 +217,10 @@ isAlreadyOccupiedForNextPositions(nextPosition.row, nextPosition.col)</label>
 	</template>
 	<template>
 		<name>Robot</name>
-		<parameter>int id</parameter>
-		<declaration>position currentPosition;
+		<parameter>int id, int K</parameter>
+		<declaration>clock t;
+
+position currentPosition;
 position currentPodPosition;
 
 bool noPossibleMoves;
@@ -254,12 +256,13 @@ void takePod() {
     grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
 }
 </declaration>
-		<location id="id5" x="603" y="127">
-			<name x="629" y="110">Moving</name>
-			<committed/>
+		<location id="id5" x="603" y="229">
+			<name x="620" y="221">Moving</name>
+			<label kind="invariant" x="620" y="238">t &lt;= K</label>
 		</location>
 		<location id="id6" x="476" y="450">
 			<name x="442" y="476">DecideAction</name>
+			<committed/>
 		</location>
 		<location id="id7" x="603" y="-68">
 			<name x="593" y="-102">WaitingGreenLight</name>
@@ -290,6 +293,7 @@ void takePod() {
 		</location>
 		<location id="id15" x="357" y="-314">
 			<name x="331" y="-348">WaitingForPossibleMoves</name>
+			<label kind="invariant" x="382" y="-323">t &lt;= K</label>
 		</location>
 		<init ref="id12"/>
 		<transition>
@@ -303,6 +307,7 @@ void takePod() {
 			<target ref="id15"/>
 			<label kind="guard" x="348" y="-263">noPossibleMoves</label>
 			<label kind="synchronisation" x="348" y="-246">noFeasibleMoves!</label>
+			<label kind="assignment" x="348" y="-229">t = 0</label>
 		</transition>
 		<transition>
 			<source ref="id14"/>
@@ -339,7 +344,8 @@ target = TO_POD</label>
 			<source ref="id7"/>
 			<target ref="id5"/>
 			<label kind="synchronisation" x="612" y="-17">canMove?</label>
-			<label kind="assignment" x="612" y="0">updateGridAfterMove(nextPosition)</label>
+			<label kind="assignment" x="612" y="0">updateGridAfterMove(nextPosition),
+t = 0</label>
 		</transition>
 		<transition>
 			<source ref="id7"/>
@@ -351,6 +357,7 @@ target = TO_POD</label>
 			<source ref="id8"/>
 			<target ref="id7"/>
 			<label kind="guard" x="365" y="-51">!noPossibleMoves</label>
+			<label kind="synchronisation" x="382" y="-34">tryingToMove!</label>
 			<label kind="assignment" x="348" y="-68">nextPosition = createPosition(2, 3)</label>
 		</transition>
 		<transition>
@@ -594,9 +601,16 @@ void takeTask() {
 	<system>// Place template instantiations here.
 
 h = Human(10);
+r0 = Robot(0, 2);
+r1 = Robot(1, 2);
+r2 = Robot(2, 2);
+
+taskManager = TaskManager(15);
+
+semaphore = Semaphore();
 
 // List one or more processes to be composed into a system.
-system h;
+system h, r0, r1, r2, taskManager, semaphore;
     </system>
 	<queries>
 		<query>
