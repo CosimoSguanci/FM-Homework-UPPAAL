@@ -149,6 +149,10 @@ position tasks[MAX_T];
 int actualLength;
 //here there is the id of the robot which has claimed a task
 int actualRobotId;
+//used to signal if the max capacity of the array is reached
+bool exploded;
+//used to signal if all pods in the grid is tasked
+bool allPodsUsed;
 
 //to initialize every local variable
 void settingUp() {
@@ -158,6 +162,8 @@ void settingUp() {
     }
     actualLength = 0;
     actualRobotId = -1;
+    exploded = false;
+    allPodsUsed = false;
 }
 
 //This checks the position of the pod to understand if it is the same of the pod in position i inside the tasks queue
@@ -214,9 +220,22 @@ position selectAPod(int tmp) {
 //selecting a position which corresponding to a free pod using the random value in input
 //adding it as task in the tasks array, updating the true length of it
 void addTask(int randomValue) {
-    position taskPos = selectAPod(randomValue);
-    actualLength += 1;
-    tasks[actualLength] = taskPos;
+    //every pods is tasked
+    if (actualLength == NUM_OF_PODS) {
+        allPodsUsed = true;
+        return;
+    }
+    else
+        allPodsUsed = false;
+    //the array has reached the max length possible?
+    if (actualLength &lt; MAX_T) {
+        position taskPos = selectAPod(randomValue);
+        actualLength += 1;
+        tasks[actualLength] = taskPos;
+        exploded = false;
+    }
+    else
+        exploded = true;
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -247,6 +266,7 @@ void takeTask() {
 }</declaration>
 		<location id="id4" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
+			<label kind="invariant" x="-246" y="-170">t &lt;= T</label>
 		</location>
 		<location id="id5" x="25" y="-119">
 			<name x="42" y="-127">Adding_task</name>
@@ -290,7 +310,6 @@ void takeTask() {
 		<transition>
 			<source ref="id4"/>
 			<target ref="id5"/>
-			<label kind="guard" x="-127" y="-204">t &gt;= T</label>
 			<nail x="-110" y="-187"/>
 		</transition>
 	</template>
