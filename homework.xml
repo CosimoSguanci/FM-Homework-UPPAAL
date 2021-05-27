@@ -44,13 +44,18 @@ const int NUM_OF_ROBOTS = 3;
 const int EMPTY = 0;
 const int ROBOT = 1;
 const int POD = 2;
+const int POD_ROBOT = 3; // pod + robot in the same cell (the pods has just been released)
+
+const int TO_DELIVERY = 0;
+const int TO_POD = 1;
+const int BACK_TO_POD = 2;
 
 
 const position entryPoint = createPosition(ROW_ENTRY_POINT, COL_ENTRY_POINT);
 const position deliveryPoint = createPosition(ROW_DELIVERY_POINT, COL_DELIVERY_POINT);
 
 
-const int grid[N][M] = {
+int grid[N][M] = {
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -63,7 +68,7 @@ const int grid[N][M] = {
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}
 };
 
-const pod pods[NUM_OF_PODS] = {
+pod pods[NUM_OF_PODS] = {
     {{1, 0}, false}, {{1, 1}, false}, {{1, 2}, false}, {{1, 3}, false},
     {{1, 4}, false}, {{1, 5}, false}, {{3, 0}, false}, {{3, 1}, false},
     {{3, 2}, false}, {{3, 3}, false}, {{3, 4}, false}, {{3, 5}, false},
@@ -73,12 +78,6 @@ const pod pods[NUM_OF_PODS] = {
     {{9, 0}, false}, {{9, 1}, false}, {{9, 2}, false}, {{9, 3}, false},
     {{9, 4}, false}, {{9, 5}, false}
 };
-
-const position nextPositions[NUM_OF_ROBOTS] = {
-    createPosition(-1, -1),
-    createPosition(-1, -1),
-    createPosition(-1, -1)
-}; // set by each robot, read by the semaphore
 
 const int MAX_T = 50;
 
@@ -218,10 +217,186 @@ isAlreadyOccupiedForNextPositions(nextPosition.row, nextPosition.col)</label>
 	</template>
 	<template>
 		<name>Robot</name>
-		<parameter>int entryPoint, int deliveryPoint</parameter>
-		<location id="id5" x="0" y="0">
+		<parameter>int id</parameter>
+		<declaration>position currentPosition;
+position currentPodPosition;
+
+bool noPossibleMoves;
+
+int target;
+
+void updateGridAfterMove(position nextPosition) {
+    grid[currentPosition.row][currentPosition.col] = EMPTY;
+    grid[nextPosition.row][nextPosition.col] = ROBOT;
+    currentPosition = nextPosition;
+}
+
+bool isNormalMove() {
+    return 
+        (!(currentPosition == deliveryPoint &amp;&amp; target == TO_DELIVERY) &amp;&amp;
+        !(target == TO_POD &amp;&amp; currentPosition == currentPodPosition) &amp;&amp;
+        !(target == BACK_TO_POD &amp;&amp; currentPosition == currentPodPosition));
+}
+
+void releasePod() {
+    int i;
+    for(i = 0; i &lt; NUM_OF_PODS; i++) {
+        if(pods[i].pos.row == currentPodPosition.row &amp;&amp; pods[i].pos.col == currentPodPosition.col) {
+            pods[i].taken = false;
+            grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
+            currentPodPosition = createPosition(-1, -1);
+            return;
+        }
+    }
+}
+
+void takePod() {
+    grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
+}
+</declaration>
+		<location id="id5" x="603" y="127">
+			<name x="629" y="110">Moving</name>
+			<committed/>
 		</location>
-		<init ref="id5"/>
+		<location id="id6" x="476" y="450">
+			<name x="442" y="476">DecideAction</name>
+		</location>
+		<location id="id7" x="603" y="-68">
+			<name x="593" y="-102">WaitingGreenLight</name>
+			<committed/>
+		</location>
+		<location id="id8" x="297" y="-68">
+			<name x="238" y="-110">DecideDirection</name>
+			<committed/>
+		</location>
+		<location id="id9" x="297" y="178">
+			<name x="314" y="170">PullUpPod</name>
+			<committed/>
+		</location>
+		<location id="id10" x="0" y="170">
+			<name x="-144" y="161">WaitingHuman</name>
+		</location>
+		<location id="id11" x="-85" y="0">
+			<name x="-136" y="17">ClaimingTask</name>
+		</location>
+		<location id="id12" x="-399" y="0">
+			<name x="-391" y="8">idle</name>
+		</location>
+		<location id="id13" x="8" y="-68">
+		</location>
+		<location id="id14" x="8" y="484">
+			<name x="-2" y="450">PutDownPod</name>
+			<committed/>
+		</location>
+		<location id="id15" x="357" y="-314">
+			<name x="331" y="-348">WaitingForPossibleMoves</name>
+		</location>
+		<init ref="id12"/>
+		<transition>
+			<source ref="id15"/>
+			<target ref="id8"/>
+			<label kind="guard" x="153" y="-331">!noPossibleMoves</label>
+			<nail x="170" y="-314"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id15"/>
+			<label kind="guard" x="348" y="-263">noPossibleMoves</label>
+		</transition>
+		<transition>
+			<source ref="id14"/>
+			<target ref="id12"/>
+			<nail x="-408" y="484"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id14"/>
+			<label kind="guard" x="76" y="493">target == BACK_TO_POD &amp;&amp;
+currentPosition == currentPodPosition</label>
+			<label kind="assignment" x="76" y="527">releasePod()</label>
+			<nail x="425" y="484"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id8"/>
+			<label kind="guard" x="8" y="-153">robotTask[id] != createPosition(-1, -1)</label>
+			<label kind="assignment" x="9" y="-127">currentPodPosition = robotTask[id], 
+target = TO_POD</label>
+		</transition>
+		<transition>
+			<source ref="id13"/>
+			<target ref="id12"/>
+			<label kind="guard" x="-348" y="-195">robotTask[id] == createPosition(-1, -1)</label>
+			<nail x="-68" y="-170"/>
+			<nail x="-399" y="-170"/>
+		</transition>
+		<transition>
+			<source ref="id5"/>
+			<target ref="id6"/>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id5"/>
+			<label kind="synchronisation" x="612" y="-17">canMove?</label>
+			<label kind="assignment" x="612" y="0">updateGridAfterMove(nextPosition)</label>
+		</transition>
+		<transition>
+			<source ref="id7"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="374" y="-187">cannotMove?</label>
+			<nail x="416" y="-162"/>
+		</transition>
+		<transition>
+			<source ref="id8"/>
+			<target ref="id7"/>
+			<label kind="guard" x="348" y="-51">!noPossibleMoves</label>
+			<label kind="assignment" x="348" y="-68">nextPosition = createPosition(2, 3)</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id8"/>
+			<label kind="guard" x="425" y="102">isNormalMove()</label>
+			<nail x="501" y="51"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id9"/>
+			<label kind="guard" x="170" y="246">target == TO_POD &amp;&amp;
+currentPosition == currentPodPosition</label>
+			<label kind="assignment" x="246" y="289">takePod()</label>
+		</transition>
+		<transition>
+			<source ref="id9"/>
+			<target ref="id8"/>
+			<label kind="assignment" x="221" y="93">target = TO_DELIVERY</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id10"/>
+			<label kind="guard" x="-255" y="246">currentPosition == deliveryPoint &amp;&amp; 
+target == TO_DELIVERY</label>
+			<label kind="synchronisation" x="-178" y="289">takeItem!</label>
+			<nail x="0" y="340"/>
+		</transition>
+		<transition>
+			<source ref="id10"/>
+			<target ref="id8"/>
+			<label kind="synchronisation" x="136" y="8">go?</label>
+			<label kind="assignment" x="76" y="34">target = BACK_TO_POD</label>
+			<nail x="8" y="68"/>
+		</transition>
+		<transition>
+			<source ref="id11"/>
+			<target ref="id13"/>
+			<label kind="synchronisation" x="17" y="-34">releaseTask?</label>
+			<nail x="8" y="0"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-255" y="-60">claim!</label>
+			<label kind="assignment" x="-314" y="-34">synchronizationRequest = id</label>
+		</transition>
 	</template>
 	<template>
 		<name>TaskManager</name>
@@ -339,6 +514,16 @@ position extractFIFO() {
     return tmp;
 }
 
+void setPodAsTaken(position podPos) {
+    int i;
+    for(i = 0; i &lt; NUM_OF_PODS; i++) {
+        if(pods[i].pos.row == podPos.row &amp;&amp; pods[i].pos.col == podPos.col) {
+            pods[i].taken = true;
+            return;
+        }
+    }
+}
+
 //estract a task from the queue and insert it in the robotTask array in the position represented by actualRobotId
 void takeTask() {
     //if there is no task, TM will not set a position for the robot
@@ -346,55 +531,62 @@ void takeTask() {
         position ext;
         ext = extractFIFO();
         robotTask[actualRobotId] = ext;
+        setPodAsTaken(ext);
+    }
+    else {
+        int i;
+        for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
+            robotTask[i] = createPosition(-1, -1);
+        } 
     }
     actualRobotId = -1;
 }</declaration>
-		<location id="id6" x="-229" y="-119">
+		<location id="id16" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
 			<label kind="invariant" x="-246" y="-170">t &lt;= T</label>
 		</location>
-		<location id="id7" x="25" y="-119">
+		<location id="id17" x="25" y="-119">
 			<name x="42" y="-127">Adding_task</name>
 			<committed/>
 		</location>
-		<location id="id8" x="-229" y="93">
+		<location id="id18" x="-229" y="93">
 			<name x="-272" y="110">Releasing_task</name>
 			<committed/>
 		</location>
-		<location id="id9" x="-391" y="-195">
+		<location id="id19" x="-391" y="-195">
 			<name x="-401" y="-229">SettingUp</name>
 			<committed/>
 		</location>
-		<init ref="id9"/>
+		<init ref="id19"/>
 		<transition>
-			<source ref="id9"/>
-			<target ref="id6"/>
+			<source ref="id19"/>
+			<target ref="id16"/>
 			<label kind="assignment" x="-373" y="-157">settingUp()</label>
 		</transition>
 		<transition>
-			<source ref="id8"/>
-			<target ref="id6"/>
+			<source ref="id18"/>
+			<target ref="id16"/>
 			<label kind="synchronisation" x="-374" y="-17">releaseTask!</label>
 			<label kind="assignment" x="-357" y="8">takeTask()</label>
 			<nail x="-280" y="-8"/>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id8"/>
+			<source ref="id16"/>
+			<target ref="id18"/>
 			<label kind="synchronisation" x="-178" y="34">claim?</label>
 			<label kind="assignment" x="-204" y="59">actualRobotId = synchronizationRequest</label>
 			<nail x="-170" y="-8"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id6"/>
+			<source ref="id17"/>
+			<target ref="id16"/>
 			<label kind="select" x="-110" y="-51">tmp: int[0,NUM_OF_PODS]</label>
 			<label kind="assignment" x="-93" y="-25">t = 0, addTask(tmp)</label>
 			<nail x="-110" y="-42"/>
 		</transition>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id7"/>
+			<source ref="id16"/>
+			<target ref="id17"/>
 			<nail x="-110" y="-187"/>
 		</transition>
 	</template>
