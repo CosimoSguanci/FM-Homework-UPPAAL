@@ -56,7 +56,6 @@ const position deliveryPoint = createPosition(ROW_DELIVERY_POINT, COL_DELIVERY_P
 
 
 int grid[N][M] = {
-    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -65,7 +64,8 @@ int grid[N][M] = {
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
-    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY}
+    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
+    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY}
 };
 
 pod pods[NUM_OF_PODS] = {
@@ -96,12 +96,6 @@ int justMovedRobotId; // used by Semaphore
 
 position nextPositionShared = {-1, -1};
 
-/*position nextPositionsShared = {
-    createPosition(-1, -1),
-    createPosition(-1, -1),
-    createPosition(-1, -1)    
-};*/
-
 /*************************************/
 /*       Channels declaration        */
 /*************************************/
@@ -110,20 +104,17 @@ chan go, takeItem, claim, canMove, cannotMove, noFeasibleMoves, tryingToMove, ju
 broadcast chan releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
-		<declaration>position nextPositions[NUM_OF_ROBOTS] = {
+		<declaration>// The next positions in which robots will go ASAP. They are set
+// when a robot is allowed to go to a cell, and they are reset to {-1, -1}
+// when the robot has performed the move
+position nextPositions[NUM_OF_ROBOTS] = {
     {-1, -1},
     {-1, -1},
     {-1, -1}
 };
 
-void initializeNextPositions() {
-    int i = 0;
-    for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
-        nextPositions[i].row = -1;
-        nextPositions[i].col = -1;
-    }
-}
-
+// A function to check if the given position is already scheduled to be
+// occupied by another robot, that has not performed the move yet
 bool isAlreadyOccupiedForNextPositions(int row, int col) {
     int i = 0;
     for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
@@ -135,11 +126,12 @@ bool isAlreadyOccupiedForNextPositions(int row, int col) {
     return false;
 }
 
-void setNextPosition(int row, int col, int robotId) {
+
+void setNextPositions(int row, int col, int robotId) {
     nextPositions[robotId].row = row;
     nextPositions[robotId].col = col;
 }</declaration>
-		<location id="id0" x="-68" y="-34">
+		<location id="id0" x="-136" y="-110">
 			<committed/>
 		</location>
 		<location id="id1" x="102" y="68">
@@ -160,24 +152,24 @@ void setNextPosition(int row, int col, int robotId) {
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="synchronisation" x="399" y="-297">noFeasibleMoves?</label>
-			<nail x="467" y="-255"/>
-			<nail x="926" y="17"/>
-			<nail x="918" y="76"/>
-			<nail x="119" y="76"/>
+			<label kind="synchronisation" x="552" y="-144">noFeasibleMoves?</label>
+			<nail x="204" y="-110"/>
+			<nail x="773" y="-110"/>
+			<nail x="773" y="68"/>
+			<nail x="586" y="68"/>
 		</transition>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="-136" y="144">canMove?</label>
-			<nail x="-68" y="136"/>
+			<label kind="synchronisation" x="-127" y="195">canMove?</label>
+			<nail x="-136" y="195"/>
 		</transition>
 		<transition>
 			<source ref="id2"/>
 			<target ref="id0"/>
-			<label kind="guard" x="-51" y="-17">grid[nextPositionShared.row][nextPositionShared.col] != EMPTY || 
+			<label kind="guard" x="-93" y="-59">grid[nextPositionShared.row][nextPositionShared.col] != EMPTY || 
 isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col)</label>
-			<label kind="synchronisation" x="-51" y="17">cannotMove!</label>
+			<label kind="synchronisation" x="-93" y="-25">cannotMove!</label>
 		</transition>
 		<transition>
 			<source ref="id2"/>
@@ -185,13 +177,13 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 			<label kind="guard" x="161" y="102">grid[nextPositionShared.row][nextPositionShared.col] == EMPTY &amp;&amp; 
 !isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col)</label>
 			<label kind="synchronisation" x="161" y="136">canMove!</label>
-			<label kind="assignment" x="161" y="152">setNextPosition(nextPositionShared.row, nextPositionShared.col, nextPositionRobotId)</label>
+			<label kind="assignment" x="161" y="152">setNextPositions(nextPositionShared.row, nextPositionShared.col, nextPositionRobotId)</label>
 			<nail x="170" y="195"/>
 		</transition>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="34" y="136">tryingToMove?</label>
+			<label kind="synchronisation" x="34" y="144">tryingToMove?</label>
 		</transition>
 	</template>
 	<template>
@@ -230,23 +222,31 @@ position currentPosition;
 position currentPodPosition;
 position nextPosition;
 
+// True if the pathfinder cannot find a move that is acceptable by the Semaphore
 bool noPossibleMoves;
 
+// What is the robot goal in this phase; possible values are: 
+// TO_DELIVERY -&gt; if the robot has taken the pod and has to carry it to the Human
+// TO_POD -&gt; if a task was given to the robot, and it has to go to pick up the pod
+// BACK_TO_POD -&gt; if the task was fullfilled but the pod has to return to its initial position
 int target;
 
+// This function actually performs the move actions by changig the grid
 void updateGridAfterMove() {
     grid[currentPosition.row][currentPosition.col] = EMPTY;
     grid[nextPosition.row][nextPosition.col] = ROBOT;
     currentPosition = nextPosition;
 }
 
+// True if the robot has to move to another cell to reach its target
 bool isNormalMove() {
     return 
-        (!(currentPosition == deliveryPoint &amp;&amp; target == TO_DELIVERY) &amp;&amp;
+        !(currentPosition == deliveryPoint &amp;&amp; target == TO_DELIVERY) &amp;&amp;
         !(target == TO_POD &amp;&amp; currentPosition == currentPodPosition) &amp;&amp;
-        !(target == BACK_TO_POD &amp;&amp; currentPosition == currentPodPosition));
+        !(target == BACK_TO_POD &amp;&amp; currentPosition == currentPodPosition);
 }
 
+// Sets the pod as NOT TAKEN, called when the pod is returned back to its initial position
 void releasePod() {
     int i;
     for(i = 0; i &lt; NUM_OF_PODS; i++) {
@@ -259,6 +259,7 @@ void releasePod() {
     }
 }
 
+// Called when the robot is picking up a pod
 void takePod() {
     grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
 }
