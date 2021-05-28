@@ -495,16 +495,32 @@ position selectAPod(int tmp) {
     return newPos;
 }
 
+int getNumOfTakenPods() {
+    int num = 0;
+    int i;
+    for (i = 0; i &lt; NUM_OF_PODS; i++) {
+        if (pods[i].taken) {
+            num++;
+        }
+    }
+    return num;
+}
+
 //selecting a position which corresponding to a free pod using the random value in input
 //adding it as task in the tasks array, updating the true length of it
 void addTask(int randomValue) {
+    
+    int numberOfTakenPods = getNumOfTakenPods();
+     
     //every pods is tasked
-    if (actualLength == NUM_OF_PODS) {
+    if ((actualLength + numberOfTakenPods) == NUM_OF_PODS) {
         allPodsUsed = true;
         return;
     }
     else
         allPodsUsed = false;
+    
+    
     //the array has reached the max length possible?
     if (actualLength &lt; MAX_T) {
         position taskPos = selectAPod(randomValue);
@@ -552,10 +568,8 @@ void takeTask() {
         setPodAsTaken(ext);
     }
     else {
-        int i;
-        for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
-            robotTask[i] = createPosition(-1, -1);
-        } 
+        // if there are no task, we make sure that the robot cannot "re-do" the previous task
+        robotTask[actualRobotId] = createPosition(-1, -1);
     }
     actualRobotId = -1;
 }</declaration>
