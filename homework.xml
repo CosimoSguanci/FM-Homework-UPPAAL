@@ -30,31 +30,27 @@ position createPosition(int row, int col) {
 /*       Constants declaration       */
 /*************************************/
 
+// Grid dimensions
 const int N = 10;
 const int M = 10;
 
+// Number of Pods
 const int NUM_OF_PODS = 30;
 
-const int ROW_ENTRY_POINT = 0;
-const int COL_ENTRY_POINT = 9;
-const int ROW_DELIVERY_POINT = 9;
-const int COL_DELIVERY_POINT = 9;
+// Entry and delivery points
+const position entryPoint     = createPosition(0, 9);
+const position deliveryPoint  = createPosition(9, 9);
+
+// Number of robots
 const int NUM_OF_ROBOTS = 3;
 
+// Possible states of each cell on the grid
 const int EMPTY = 0;
 const int ROBOT = 1;
 const int POD = 2;
 const int POD_ROBOT = 3; // pod + robot in the same cell (the pods has just been released)
 
-const int TO_DELIVERY = 0;
-const int TO_POD = 1;
-const int BACK_TO_POD = 2;
-
-
-const position entryPoint = createPosition(ROW_ENTRY_POINT, COL_ENTRY_POINT);
-const position deliveryPoint = createPosition(ROW_DELIVERY_POINT, COL_DELIVERY_POINT);
-
-
+// Grid composition
 int grid[N][M] = {
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -68,6 +64,7 @@ int grid[N][M] = {
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY}
 };
 
+// Initialization of Pods and their positions
 pod pods[NUM_OF_PODS] = {
     {{1, 0}, false}, {{1, 1}, false}, {{1, 2}, false}, {{1, 3}, false},
     {{1, 4}, false}, {{1, 5}, false}, {{3, 0}, false}, {{3, 1}, false},
@@ -79,20 +76,27 @@ pod pods[NUM_OF_PODS] = {
     {{9, 4}, false}, {{9, 5}, false}
 };
 
+// Max time
 const int MAX_T = 50;
 
+
+/********************************************/
+/*       Shared variables declaration       */
+/********************************************/
+
+// set by taskManager, read by the robots when the broadcast channel is activate
+// every robot will read to his position and if the position is different from {-1,-1}
+// the robot will be able to move to that pod
 position robotTask[NUM_OF_ROBOTS] = {
     createPosition(-1, -1),
     createPosition(-1, -1),
     createPosition(-1, -1)
-}; // set by taskManager, read by the robots when the broadcast channel is activate
-//every robot will read to his position and if the position is different from {-1,-1}
-//the robot will be able to move to that pod
+}; 
 
-int synchronizationRequest; // used by TaskManager
+int synchronizationRequest;  // used by TaskManager
 
-int nextPositionRobotId; // used by Semaphore
-int justMovedRobotId; // used by Semaphore
+int nextPositionRobotId;     // used by Semaphore
+int justMovedRobotId;        // used by Semaphore
 
 position nextPositionShared = {-1, -1};
 
@@ -218,6 +222,7 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 		<parameter>int id, int K</parameter>
 		<declaration>clock t;
 
+// Notable positions that the robot must remember
 position currentPosition;
 position currentPodPosition;
 position nextPosition;
@@ -225,11 +230,19 @@ position nextPosition;
 // True if the pathfinder cannot find a move that is acceptable by the Semaphore
 bool noPossibleMoves;
 
-// What is the robot goal in this phase; possible values are: 
-// TO_DELIVERY -&gt; if the robot has taken the pod and has to carry it to the Human
-// TO_POD -&gt; if a task was given to the robot, and it has to go to pick up the pod
-// BACK_TO_POD -&gt; if the task was fullfilled but the pod has to return to its initial position
+// What is the robot goal in this phase
 int target;
+
+// Possible target states
+const int TO_DELIVERY = 0; // If the robot has taken the pod and has to carry it to the Human
+const int TO_POD      = 1; // If a task was given to the robot, and it has to go to pick up the pod
+const int BACK_TO_POD = 2; // If the task was fullfilled but the pod has to return to its initial position
+
+// Next goal position for the robot
+position goal;
+
+// Path to follow
+position path[N*M];
 
 // This function actually performs the move actions by changig the grid
 void updateGridAfterMove() {
@@ -260,9 +273,194 @@ void releasePod() {
 }
 
 // Called when the robot is picking up a pod
-void takePod() {
-    grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
+void takePod() { grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT; }
+
+// Used when robot change target to update it's variables
+void updateTarget(int[0,2] update){
+    // Simply update the tager variable
+    target = update;
+    
+    // Depending on target, update other wariables
+    if(update == TO_DELIVERY){
+        goal = deliveryPoint;
+    } else if(update == TO_POD){
+        currentPodPosition = robotTask[id];
+        goal = currentPodPosition;
+    } else if(update == BACK_TO_POD){
+        goal = currentPodPosition;
+    }
 }
+
+// Return the next position in the path to the goal
+position getNextMove(){ return path[0]; }
+
+// Move already performed, so remove path[0] and shift up every position
+void advancePath(){
+    int i, max = N*M-1;
+    // Shifting everything up
+    for(i=0; i&lt;max; i++){ path[i] = path[i+1]; }
+}
+
+
+/********************************************/
+/*       Path Finding Support Functions     */
+/********************************************/
+
+// Pathfinding helper variables
+const position UP     = createPosition(1, 0);
+const position RIGHT  = createPosition(0, 1);
+const position DOWN   = createPosition(-1, 0);
+const position LEFT   = createPosition(0, -1);
+const position NULL   = createPosition(-1, -1);
+
+// Add two positions
+position addPos(position a, position b){ return createPosition(a.row + b.row, a.col + b.col); }
+// Copy a position
+position copy(position p){position ret = {p.row, p.col}; return ret;}
+// Return true if 2 positions are equal
+bool isEqual(position a, position b){ return a.row==b.row &amp;&amp; a.col==b.col; }
+// Reset to NULL position all path positions
+void resetPath(){ int i; for(i=0; i&lt;N*M; i++){ path[i] = createPosition(-1, -1); } }
+
+// Return true if a position is a "possible" position
+bool isFeasible(position p){
+    bool base = false;
+    bool other = false;
+
+    // Standard feasibility check
+    base = p.row&gt;=0 &amp;&amp; p.row&lt;N &amp;&amp; p.col&gt;=0 &amp;&amp; p.col&lt;M;
+
+    // If robot is moving a pod, add other check
+    if(target==BACK_TO_POD || target==TO_DELIVERY){ other = not(grid[p.row][p.col] == POD); }
+    //Otherwise, make this useless
+    else { other = true; }
+
+    return base &amp;&amp; other;
+}
+
+// Romve the last position in the queue
+position remove(position&amp; queue[N*M], int&amp; len){
+    // Obtain correct pos
+    position pos = queue[len-1];
+    
+    // Move up one position every other 
+    queue[len-1] = createPosition(-1, -1);
+    
+    // Update actual array length
+    len = len - 1;
+
+    return pos;
+}
+
+// Add position to the queue
+void add(position pos, position&amp; queue[N*M], int&amp; len){
+    // Do something only if enough space
+    if(len &lt; N*M){
+        // Insert new pos
+        queue[len] = pos;
+
+        // Increase length array
+        len = len + 1;
+    }
+    
+}
+
+// Get the next direction clockwise
+position getNextDir(position d){
+    if(isEqual(d, UP))           { return copy(RIGHT); }
+    else if(isEqual(d, RIGHT))   { return copy(DOWN); }
+    else if(isEqual(d, DOWN))    { return copy(LEFT); }
+    else                         { return copy(UP); }
+}
+
+// Get the previous direction clockwise
+position getPrevDir(position d){
+    if(isEqual(d, UP))           { return copy(LEFT); }
+    else if(isEqual(d, LEFT))    { return copy(DOWN); }
+    else if(isEqual(d, DOWN))    { return copy(RIGHT); }
+    else                         { return copy(UP); }
+}
+
+// To eliminate very stupid paths, we decide the first direction to check in a greedy way
+position greedyStartDir(position p){
+    // Vector representing distance on x axis
+    int x = goal.row - p.row;
+    // Vector representing distance on y axis
+    int y = goal.col - p.col;
+    
+    // If abs(x) &gt;= abs(y) then the first direction to check should be RIGHT
+    if(abs(x) &gt;= abs(y)){
+        if (x&gt;=0)   { return getPrevDir(RIGHT); }
+        else        { return getPrevDir(LEFT); }
+    } else {
+        if (y&gt;=0)   { return getPrevDir(UP); }
+        else        { return getPrevDir(DOWN); }
+    }
+}
+
+
+
+/************************************************/
+/*     Path finding Algorithm (Backtracking)    */
+/************************************************/
+
+void findPath(){
+    // Queue needed to seach the entire matrix
+    position queue[N*M];
+    // Current queue length
+    int len = 0;
+    // Matrix representing if a cell is already visited
+    bool visited[N][M];
+    // Control variables for while loop
+    bool searching = true;
+    bool found = false;
+    bool added = false;
+    // Miscellaneous
+    int i, j;
+    position dir, next;
+    
+    // Initialize visited matrix
+    for(i=0; i&lt;N; i++){ for(j=0; j&lt;M; j++){ visited[i][j] = false; } }
+    // Reset path
+    for(i=0; i&lt;N*M; i++){ path[i] = createPosition(-1, -1); }
+    
+    // Add first position that in the end will be removed
+    add(currentPosition, queue, len);
+    if(not isEqual(currentPosition, NULL)) { visited[currentPosition.row][currentPosition.col] = true; }
+    
+    while(searching &amp;&amp; not found){
+        if(len &gt; 0){
+            // Goal found, ending everything :)
+            if(isEqual(queue[len-1], goal)){ found = true; }
+            
+            // Set to visited the cell
+            visited[queue[len-1].row][queue[len-1].col] = true;
+            
+            // Let's start from one direction
+            dir = greedyStartDir(queue[len-1]);
+            // Check each direction
+            for(i=0; i&lt;4; i++){
+                // Obtain next direction to check
+                dir = getNextDir(dir);
+                // Obtain the resulting position after "moving" in the specified direction
+                next = addPos(queue[len-1], dir);
+                // Only is feasible and not already visited, add the position to the queue
+                if(isFeasible(next) &amp;&amp; not visited[next.row][next.col]) { add(next, queue, len); added = true; i=4; }
+            }
+            // If no position was added, then the current position is not part of the solution, so it's removed from queue
+            if(not added){ remove(queue, len); }
+            // Variable reset to be ready for next cycle
+            added = false;
+
+        } else { searching = false; }
+    }
+
+    if(found){
+        // Copy the queue from element 1 (0 element is useless as it is the current position)
+        for(i=1; i&lt;len; i++){ path[i] = queue[i]; }
+    } else { noPossibleMoves = true; }
+}
+
 </declaration>
 		<location id="id5" x="603" y="229">
 			<name x="620" y="221">Moving</name>
@@ -332,9 +530,8 @@ currentPosition == currentPodPosition</label>
 		<transition>
 			<source ref="id13"/>
 			<target ref="id8"/>
-			<label kind="guard" x="8" y="-153">robotTask[id] != createPosition(-1, -1)</label>
-			<label kind="assignment" x="9" y="-127">currentPodPosition = robotTask[id], 
-target = TO_POD</label>
+			<label kind="guard" x="-17" y="-127">robotTask[id] != createPosition(-1, -1)</label>
+			<label kind="assignment" x="25" y="-102">updateTarget(TO_POD)</label>
 		</transition>
 		<transition>
 			<source ref="id13"/>
@@ -387,7 +584,7 @@ currentPosition == currentPodPosition</label>
 		<transition>
 			<source ref="id9"/>
 			<target ref="id8"/>
-			<label kind="assignment" x="221" y="93">target = TO_DELIVERY</label>
+			<label kind="assignment" x="170" y="119">updateTarget(TO_DELIVERY)</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -400,8 +597,8 @@ target == TO_DELIVERY</label>
 		<transition>
 			<source ref="id10"/>
 			<target ref="id8"/>
-			<label kind="synchronisation" x="136" y="8">go?</label>
-			<label kind="assignment" x="76" y="34">target = BACK_TO_POD</label>
+			<label kind="synchronisation" x="102" y="25">go?</label>
+			<label kind="assignment" x="42" y="51">updateTarget(BACK_TO_POD)</label>
 			<nail x="8" y="68"/>
 		</transition>
 		<transition>
