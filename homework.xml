@@ -253,7 +253,7 @@ const int BACK_TO_POD = 2; // If the task was fullfilled but the pod has to retu
 position goal;
 
 // Path to follow
-position path[N*M];
+meta position path[N*M];
 
 // This function actually performs the move actions by changing the grid
 void updateGridAfterMove() {
@@ -899,7 +899,7 @@ system h, r0, r1, r2, taskManager, semaphore;
     </system>
 	<queries>
 		<query>
-			<formula>E&lt;&gt;(r0.PullUpPod)</formula>
+			<formula>E&lt;&gt;(h.Taking_item)</formula>
 			<comment></comment>
 		</query>
 	</queries>
