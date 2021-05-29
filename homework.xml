@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE nta PUBLIC '-//Uppaal Team//DTD Flat System 1.1//EN' 'http://www.it.uu.se/research/group/darts/uppaal/flat-1_2.dtd'>
 <nta>
-	<declaration>/************************************/
+	<declaration>// Grid Dimension Declaration
+const int N = 10;
+const int M = 10;
+
+/************************************/
 /*     Custom types declaration     */
 /************************************/
 
 typedef struct {
-    int row;
-    int col;
+    int[-1, N] row;
+    int[-1, M] col;
 } position;
 
 typedef struct {
@@ -30,10 +34,6 @@ position createPosition(int row, int col) {
 /*       Constants declaration       */
 /*************************************/
 
-// Grid dimensions
-const int N = 10;
-const int M = 10;
-
 // Number of Pods
 const int NUM_OF_PODS = 30;
 
@@ -45,13 +45,13 @@ const position deliveryPoint  = createPosition(0, 9);
 const int NUM_OF_ROBOTS = 3;
 
 // Possible states of each cell on the grid
-const int EMPTY = 0;
-const int ROBOT = 1;
-const int POD = 2;
-const int POD_ROBOT = 3; // pod + robot in the same cell (the pods has just been released)
+const int EMPTY     = 0;
+const int ROBOT     = 1;
+const int POD       = 2;
+const int POD_ROBOT = 3; // pod + robot in the same cell
 
 // Grid composition
-int grid[N][M] = {
+int[0,3] grid[N][M] = {
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -95,8 +95,8 @@ position robotTask[NUM_OF_ROBOTS] = {
 
 int synchronizationRequest;  // used by TaskManager
 
-int nextPositionRobotId;     // used by Semaphore
-int justMovedRobotId;        // used by Semaphore
+int[-1, NUM_OF_ROBOTS] nextPositionRobotId;     // used by Semaphore
+int[-1, NUM_OF_ROBOTS] justMovedRobotId;        // used by Semaphore
 
 position nextPositionShared = {-1, -1};
 
@@ -137,9 +137,15 @@ void setNextPositions(int row, int col, int robotId) {
 }
 
 bool isEmptyOrPod(position pos) {
-    return 
-        grid[nextPositionShared.row][nextPositionShared.col] == EMPTY ||
-        grid[nextPositionShared.row][nextPositionShared.col] == POD;
+    bool empty, pod;
+
+    if(pos.row&gt;=0 &amp;&amp; pos.row&lt;N &amp;&amp; pos.col&gt;=0 &amp;&amp; pos.col&lt;M){
+        empty = grid[nextPositionShared.row][nextPositionShared.col] == EMPTY;
+        pod = grid[nextPositionShared.row][nextPositionShared.col] == POD;
+        return empty || pod;
+    } else { return false; }
+    
+        
 }</declaration>
 		<location id="id0" x="-136" y="-110">
 		</location>
@@ -247,7 +253,7 @@ const int BACK_TO_POD = 2; // If the task was fullfilled but the pod has to retu
 position goal;
 
 // Path to follow
-meta position path[N*M];
+position path[N*M];
 
 // This function actually performs the move actions by changing the grid
 void updateGridAfterMove() {
@@ -325,11 +331,11 @@ void advancePath(){
 /********************************************/
 
 // Pathfinding helper variables
-const position UP     = createPosition(1, 0);
-const position RIGHT  = createPosition(0, 1);
-const position DOWN   = createPosition(-1, 0);
-const position LEFT   = createPosition(0, -1);
-const position NULL   = createPosition(-1, -1);
+meta position UP     = createPosition(-1, 0);
+meta position RIGHT  = createPosition(0, 1);
+meta position DOWN   = createPosition(1, 0);
+meta position LEFT   = createPosition(0, -1);
+meta position NULL   = createPosition(-1, -1);
 
 // Add two positions
 position addPos(position a, position b){ return createPosition(a.row + b.row, a.col + b.col); }
@@ -341,19 +347,28 @@ bool isEqual(position a, position b){ return a.row==b.row &amp;&amp; a.col==b.co
 void resetPath(){ int i; for(i=0; i&lt;N*M; i++){ path[i] = createPosition(-1, -1); } }
 
 // Return true if a position is a "possible" position
-bool isFeasible(position p){
+bool isFeasible(position p, bool reroute){
     bool base = false;
-    bool other = false;
+    bool pod = false;
+    bool next = false;
 
     // Standard feasibility check
     base = p.row&gt;=0 &amp;&amp; p.row&lt;N &amp;&amp; p.col&gt;=0 &amp;&amp; p.col&lt;M;
+    
+    // Only if on the grid, check other things
+    if(base){
+        // If robot is moving a pod, check if pos has a pod
+        if(target==BACK_TO_POD || target==TO_DELIVERY){ pod = not(grid[p.row][p.col] == POD || grid[p.row][p.col] == POD_ROBOT); }
+        //Otherwise, make this useless
+        else { pod = true; }
+        
+        // If this is after a cannotMove, check if it's equal to already excluded nextMove
+        if(reroute){ next = not(p.row==nextPosition.row &amp;&amp; p.col==nextPosition.col); }
+        else { next = true; }
+        
+        return pod &amp;&amp; next;
+    } else { return false; }
 
-    // If robot is moving a pod, add other check
-    if(target==BACK_TO_POD || target==TO_DELIVERY){ other = not(grid[p.row][p.col] == POD); }
-    //Otherwise, make this useless
-    else { other = true; }
-
-    return base &amp;&amp; other;
 }
 
 // Romve the last position in the queue
@@ -402,9 +417,9 @@ position getPrevDir(position d){
 // To eliminate very stupid paths, we decide the first direction to check in a greedy way
 position greedyStartDir(position p){
     // Vector representing distance on x axis
-    int x = goal.row - p.row;
+    int x = goal.col - p.col;
     // Vector representing distance on y axis
-    int y = goal.col - p.col;
+    int y = goal.row - p.row;
     
     // If abs(x) &gt;= abs(y) then the first direction to check should be RIGHT
     if(abs(x) &gt;= abs(y)){
@@ -422,7 +437,7 @@ position greedyStartDir(position p){
 /*     Path finding Algorithm (Backtracking)    */
 /************************************************/
 
-void findPath(){
+void findPath(bool reroute){
     // Queue needed to seach the entire matrix
     position queue[N*M];
     // Current queue length
@@ -440,11 +455,11 @@ void findPath(){
     // Initialize visited matrix
     for(i=0; i&lt;N; i++){ for(j=0; j&lt;M; j++){ visited[i][j] = false; } }
     // Reset path
-    for(i=0; i&lt;N*M; i++){ path[i] = createPosition(-1, -1); }
+    resetPath();
 
- 
+    // Given that it was outside of the grid, set the robot on entryPoint
     if(currentPosition == createPosition(-1, -1)) { curPos = entryPoint; }
-    
+    // Else initialize curPos normally
     else { curPos = currentPosition; }
     
     // Add first position that in the end will be removed
@@ -455,25 +470,32 @@ void findPath(){
         if(len &gt; 0){
             // Goal found, ending everything :)
             if(isEqual(queue[len-1], goal)){ found = true; }
+            else {
+                // Set to visited the cell
+                visited[queue[len-1].row][queue[len-1].col] = true;
             
-            // Set to visited the cell
-            visited[queue[len-1].row][queue[len-1].col] = true;
-            
-            // Let's start from one direction
-            dir = greedyStartDir(queue[len-1]);
-            // Check each direction
-            for(i=0; i&lt;4; i++){
-                // Obtain next direction to check
-                dir = getNextDir(dir);
-                // Obtain the resulting position after "moving" in the specified direction
-                next = addPos(queue[len-1], dir);
-                // Only is feasible and not already visited, add the position to the queue
-                if(isFeasible(next) &amp;&amp; not visited[next.row][next.col]) { add(next, queue, len); added = true; i=4; }
+                // Let's start from one direction
+                dir = greedyStartDir(queue[len-1]);
+                // Check each direction
+                for(i=0; i&lt;4; i++){
+                    // Obtain next direction to check
+                    dir = getNextDir(dir);
+                    // Obtain the resulting position after "moving" in the specified direction
+                    next = addPos(queue[len-1], dir);
+                    // Only is feasible and not already visited, add the position to the queue
+                    if(isFeasible(next, reroute)){ 
+                        if(not visited[next.row][next.col]){
+                            add(next, queue, len);
+                            added = true;
+                            i=4; // Needed to end the direction loop
+                        }
+                    }
+                }
+                // If no position was added, then the current position is not part of the solution, so it's removed from queue
+                if(not added){ remove(queue, len); }
+                // Variable reset to be ready for next cycle
+                added = false;
             }
-            // If no position was added, then the current position is not part of the solution, so it's removed from queue
-            if(not added){ remove(queue, len); }
-            // Variable reset to be ready for next cycle
-            added = false;
 
         } else { searching = false; }
     }
@@ -483,8 +505,6 @@ void findPath(){
         for(i=1; i&lt;len; i++){ path[i - 1] = queue[i]; }
     } else { noPossibleMoves = true; }
 }
-
-void findPath2() {}
 
 void updateGridIfFirstMove() {
     if(currentPosition == createPosition(-1, -1)) {
@@ -551,6 +571,7 @@ void updateGridIfFirstMove() {
 		<transition>
 			<source ref="id14"/>
 			<target ref="id12"/>
+			<label kind="assignment" x="-484" y="374">resetPath()</label>
 			<nail x="-399" y="484"/>
 		</transition>
 		<transition>
@@ -567,7 +588,7 @@ currentPosition == currentPodPosition</label>
 			<label kind="guard" x="25" y="-136">robotTask[id] != createPosition(-1, -1)</label>
 			<label kind="assignment" x="25" y="-119">updateTarget(TO_POD),
 updateGridIfFirstMove(),
-findPath()</label>
+findPath(false)</label>
 		</transition>
 		<transition>
 			<source ref="id13"/>
@@ -595,7 +616,7 @@ advancePath()</label>
 			<source ref="id7"/>
 			<target ref="id8"/>
 			<label kind="synchronisation" x="408" y="-204">cannotMove?</label>
-			<label kind="assignment" x="416" y="-187">findPath2()</label>
+			<label kind="assignment" x="408" y="-187">findPath(true)</label>
 			<nail x="450" y="-161"/>
 		</transition>
 		<transition>
@@ -623,7 +644,8 @@ currentPosition == currentPodPosition</label>
 		<transition>
 			<source ref="id9"/>
 			<target ref="id8"/>
-			<label kind="assignment" x="170" y="119">updateTarget(TO_DELIVERY)</label>
+			<label kind="assignment" x="170" y="119">updateTarget(TO_DELIVERY),
+findPath(false)</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -637,7 +659,8 @@ target == TO_DELIVERY</label>
 			<source ref="id10"/>
 			<target ref="id8"/>
 			<label kind="synchronisation" x="102" y="25">go?</label>
-			<label kind="assignment" x="42" y="51">updateTarget(BACK_TO_POD)</label>
+			<label kind="assignment" x="42" y="51">updateTarget(BACK_TO_POD),
+findPath(false)</label>
 			<nail x="8" y="68"/>
 		</transition>
 		<transition>
@@ -659,11 +682,11 @@ target == TO_DELIVERY</label>
 		<declaration>clock t;
 
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
-position tasks[MAX_T];
+meta position tasks[MAX_T];
 //to keep track of the actual number of task present in the tasks array
-meta int actualLength;
+int[0, MAX_T-1] actualLength;
 //here there is the id of the robot which has claimed a task
-int[0,NUM_OF_ROBOTS] actualRobotId;
+int[-1,NUM_OF_ROBOTS] actualRobotId;
 //used to signal if the max capacity of the array is reached
 bool exploded;
 //used to signal if all pods in the grid is tasked
