@@ -236,7 +236,7 @@ position nextPosition;
 bool noPossibleMoves;
 
 // What is the robot goal in this phase
-int target;
+int[0, 2] target;
 
 // Possible target states
 const int TO_DELIVERY = 0; // If the robot has taken the pod and has to carry it to the Human
@@ -247,7 +247,7 @@ const int BACK_TO_POD = 2; // If the task was fullfilled but the pod has to retu
 position goal;
 
 // Path to follow
-position path[N*M];
+meta position path[N*M];
 
 // This function actually performs the move actions by changing the grid
 void updateGridAfterMove() {
@@ -661,9 +661,9 @@ target == TO_DELIVERY</label>
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
 position tasks[MAX_T];
 //to keep track of the actual number of task present in the tasks array
-int actualLength;
+meta int actualLength;
 //here there is the id of the robot which has claimed a task
-int actualRobotId;
+int[0,NUM_OF_ROBOTS] actualRobotId;
 //used to signal if the max capacity of the array is reached
 bool exploded;
 //used to signal if all pods in the grid is tasked
@@ -876,7 +876,7 @@ system h, r0, r1, r2, taskManager, semaphore;
     </system>
 	<queries>
 		<query>
-			<formula></formula>
+			<formula>E&lt;&gt;(r0.PullUpPod)</formula>
 			<comment></comment>
 		</query>
 	</queries>
