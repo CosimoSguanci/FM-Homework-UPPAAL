@@ -5,6 +5,9 @@
 const int N = 10;
 const int M = 10;
 
+// Max task
+const int MAX_TASK = 25;
+
 /************************************/
 /*     Custom types declaration     */
 /************************************/
@@ -40,6 +43,7 @@ const int NUM_OF_PODS = 30;
 // Entry and delivery points
 const position entryPoint     = createPosition(9, 9);
 const position deliveryPoint  = createPosition(0, 9);
+const position nullPosition   = createPosition(-1, -1);
 
 // Number of robots
 const int NUM_OF_ROBOTS = 3;
@@ -76,9 +80,6 @@ pod pods[NUM_OF_PODS] = {
     {{9, 4}, false}, {{9, 5}, false}
 };
 
-// Max time
-const int MAX_T = 50;
-
 
 /********************************************/
 /*       Shared variables declaration       */
@@ -88,9 +89,9 @@ const int MAX_T = 50;
 // every robot will read to his position and if the position is different from {-1,-1}
 // the robot will be able to move to that pod
 position robotTask[NUM_OF_ROBOTS] = {
-    createPosition(-1, -1),
-    createPosition(-1, -1),
-    createPosition(-1, -1)
+    nullPosition,
+    nullPosition,
+    nullPosition
 }; 
 
 int synchronizationRequest;  // used by TaskManager
@@ -98,7 +99,7 @@ int synchronizationRequest;  // used by TaskManager
 int[-1, NUM_OF_ROBOTS] nextPositionRobotId;     // used by Semaphore
 int[-1, NUM_OF_ROBOTS] justMovedRobotId;        // used by Semaphore
 
-position nextPositionShared = {-1, -1};
+position nextPositionShared = nullPosition;
 
 /*************************************/
 /*       Channels declaration        */
@@ -112,9 +113,9 @@ broadcast chan releaseTask;</declaration>
 // when a robot is allowed to go to a cell, and they are reset to {-1, -1}
 // when the robot has performed the move
 position nextPositions[NUM_OF_ROBOTS] = {
-    {-1, -1},
-    {-1, -1},
-    {-1, -1}
+    nullPosition,
+    nullPosition,
+    nullPosition
 };
 
 // A function to check if the given position is already scheduled to be
@@ -160,7 +161,7 @@ bool isEmptyOrPod(position pos) {
 			<source ref="id1"/>
 			<target ref="id1"/>
 			<label kind="synchronisation" x="153" y="25">justMoved?</label>
-			<label kind="assignment" x="153" y="42">nextPositions[justMovedRobotId] = createPosition(-1, -1)</label>
+			<label kind="assignment" x="153" y="42">nextPositions[justMovedRobotId] = nullPosition</label>
 			<nail x="119" y="25"/>
 			<nail x="153" y="34"/>
 		</transition>
@@ -234,7 +235,7 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 		<declaration>clock t;
 
 // Notable positions that the robot must remember
-position currentPosition = createPosition(-1, -1);
+position currentPosition = nullPosition;
 position currentPodPosition;
 position nextPosition;
 
@@ -290,7 +291,7 @@ void releasePod() {
         if(pods[i].pos.row == currentPodPosition.row &amp;&amp; pods[i].pos.col == currentPodPosition.col) {
             pods[i].taken = false;
             grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
-            currentPodPosition = createPosition(-1, -1);
+            currentPodPosition = nullPosition;
             return;
         }
     }
@@ -331,11 +332,11 @@ void advancePath(){
 /********************************************/
 
 // Pathfinding helper variables
-meta position UP     = createPosition(-1, 0);
-meta position RIGHT  = createPosition(0, 1);
-meta position DOWN   = createPosition(1, 0);
-meta position LEFT   = createPosition(0, -1);
-meta position NULL   = createPosition(-1, -1);
+const position UP     = createPosition(-1, 0);
+const position RIGHT  = createPosition(0, 1);
+const position DOWN   = createPosition(1, 0);
+const position LEFT   = createPosition(0, -1);
+const position NULL   = nullPosition;
 
 // Add two positions
 position addPos(position a, position b){ return createPosition(a.row + b.row, a.col + b.col); }
@@ -344,7 +345,7 @@ position copy(position p){position ret = {p.row, p.col}; return ret;}
 // Return true if 2 positions are equal
 bool isEqual(position a, position b){ return a.row==b.row &amp;&amp; a.col==b.col; }
 // Reset to NULL position all path positions
-void resetPath(){ int i; for(i=0; i&lt;N*M; i++){ path[i] = createPosition(-1, -1); } }
+void resetPath(){ int i; for(i=0; i&lt;N*M; i++){ path[i] = nullPosition; } }
 
 // Return true if a position is a "possible" position
 bool isFeasible(position p, bool reroute){
@@ -377,7 +378,7 @@ position remove(position&amp; queue[N*M], int&amp; len){
     position pos = queue[len-1];
     
     // Move up one position every other 
-    queue[len-1] = createPosition(-1, -1);
+    queue[len-1] = nullPosition;
     
     // Update actual array length
     len = len - 1;
@@ -458,7 +459,7 @@ void findPath(bool reroute){
     resetPath();
 
     // Given that it was outside of the grid, set the robot on entryPoint
-    if(currentPosition == createPosition(-1, -1)) { curPos = entryPoint; }
+    if(currentPosition == nullPosition) { curPos = entryPoint; }
     // Else initialize curPos normally
     else { curPos = currentPosition; }
     
@@ -507,7 +508,7 @@ void findPath(bool reroute){
 }
 
 void updateGridIfFirstMove() {
-    if(currentPosition == createPosition(-1, -1)) {
+    if(currentPosition == nullPosition) {
         currentPosition = entryPoint;
         grid[currentPosition.row][currentPosition.col] = ROBOT;
     }
@@ -530,72 +531,80 @@ void updateGridIfFirstMove() {
 			<name x="238" y="-110">DecideDirection</name>
 			<committed/>
 		</location>
-		<location id="id9" x="297" y="178">
-			<name x="314" y="170">PullUpPod</name>
-			<committed/>
+		<location id="id9" x="0" y="170">
+			<name x="-127" y="161">WaitingHuman</name>
 		</location>
-		<location id="id10" x="0" y="170">
-			<name x="-144" y="161">WaitingHuman</name>
-		</location>
-		<location id="id11" x="-85" y="0">
+		<location id="id10" x="-85" y="0">
 			<name x="-136" y="17">ClaimingTask</name>
 		</location>
-		<location id="id12" x="-399" y="0">
+		<location id="id11" x="-399" y="0">
 			<name x="-391" y="8">idle</name>
-		</location>
-		<location id="id13" x="8" y="-68">
 			<committed/>
 		</location>
-		<location id="id14" x="8" y="484">
-			<name x="-2" y="450">PutDownPod</name>
+		<location id="id12" x="8" y="-68">
+			<name x="-93" y="-102">TaskChecking</name>
 			<committed/>
 		</location>
-		<location id="id15" x="357" y="-314">
+		<location id="id13" x="357" y="-314">
 			<name x="331" y="-348">WaitingForPossibleMoves</name>
 			<label kind="invariant" x="382" y="-323">t &lt;= K</label>
 		</location>
-		<init ref="id12"/>
+		<location id="id14" x="-195" y="-161">
+			<name x="-221" y="-195">WaitingTask</name>
+			<label kind="invariant" x="-212" y="-144">t &lt;= K</label>
+		</location>
+		<init ref="id11"/>
 		<transition>
-			<source ref="id15"/>
+			<source ref="id14"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-314" y="-187">t &gt;= K</label>
+			<nail x="-399" y="-161"/>
+		</transition>
+		<transition>
+			<source ref="id12"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-110" y="-187">robotTask[id] == nullPosition</label>
+			<label kind="assignment" x="-51" y="-161">t = 0</label>
+			<nail x="8" y="-161"/>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id8"/>
+			<label kind="guard" x="195" y="161">target == TO_POD &amp;&amp;
+currentPosition == currentPodPosition</label>
+			<label kind="assignment" x="195" y="204">takePod(),
+updateTarget(TO_DELIVERY),
+findPath(false)</label>
+		</transition>
+		<transition>
+			<source ref="id6"/>
+			<target ref="id11"/>
+			<label kind="guard" x="-221" y="459">target == BACK_TO_POD &amp;&amp;
+currentPosition == currentPodPosition</label>
+			<label kind="assignment" x="-221" y="493">releasePod(),
+resetPath()</label>
+			<nail x="-399" y="450"/>
+		</transition>
+		<transition>
+			<source ref="id13"/>
 			<target ref="id8"/>
 			<label kind="guard" x="212" y="-340">t &gt;= K</label>
 			<nail x="170" y="-314"/>
 		</transition>
 		<transition>
 			<source ref="id8"/>
-			<target ref="id15"/>
+			<target ref="id13"/>
 			<label kind="guard" x="348" y="-263">noPossibleMoves</label>
 			<label kind="synchronisation" x="348" y="-246">noFeasibleMoves!</label>
 			<label kind="assignment" x="348" y="-229">t = 0</label>
 		</transition>
 		<transition>
-			<source ref="id14"/>
-			<target ref="id12"/>
-			<label kind="assignment" x="-484" y="374">resetPath()</label>
-			<nail x="-399" y="484"/>
-		</transition>
-		<transition>
-			<source ref="id6"/>
-			<target ref="id14"/>
-			<label kind="guard" x="76" y="493">target == BACK_TO_POD &amp;&amp;
-currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="76" y="527">releasePod()</label>
-			<nail x="425" y="484"/>
-		</transition>
-		<transition>
-			<source ref="id13"/>
+			<source ref="id12"/>
 			<target ref="id8"/>
-			<label kind="guard" x="25" y="-136">robotTask[id] != createPosition(-1, -1)</label>
+			<label kind="guard" x="25" y="-136">robotTask[id] != nullPosition</label>
 			<label kind="assignment" x="25" y="-119">updateTarget(TO_POD),
 updateGridIfFirstMove(),
 findPath(false)</label>
-		</transition>
-		<transition>
-			<source ref="id13"/>
-			<target ref="id12"/>
-			<label kind="guard" x="-348" y="-195">robotTask[id] == createPosition(-1, -1)</label>
-			<nail x="-68" y="-170"/>
-			<nail x="-399" y="-170"/>
 		</transition>
 		<transition>
 			<source ref="id5"/>
@@ -637,26 +646,13 @@ nextPositionShared = nextPosition</label>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id9"/>
-			<label kind="guard" x="170" y="246">target == TO_POD &amp;&amp;
-currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="246" y="289">takePod()</label>
-		</transition>
-		<transition>
-			<source ref="id9"/>
-			<target ref="id8"/>
-			<label kind="assignment" x="170" y="119">updateTarget(TO_DELIVERY),
-findPath(false)</label>
-		</transition>
-		<transition>
-			<source ref="id6"/>
-			<target ref="id10"/>
 			<label kind="guard" x="-255" y="246">currentPosition == deliveryPoint &amp;&amp; 
 target == TO_DELIVERY</label>
 			<label kind="synchronisation" x="-178" y="289">takeItem!</label>
 			<nail x="0" y="340"/>
 		</transition>
 		<transition>
-			<source ref="id10"/>
+			<source ref="id9"/>
 			<target ref="id8"/>
 			<label kind="synchronisation" x="102" y="25">go?</label>
 			<label kind="assignment" x="42" y="51">updateTarget(BACK_TO_POD),
@@ -664,14 +660,14 @@ findPath(false)</label>
 			<nail x="8" y="68"/>
 		</transition>
 		<transition>
-			<source ref="id11"/>
-			<target ref="id13"/>
+			<source ref="id10"/>
+			<target ref="id12"/>
 			<label kind="synchronisation" x="17" y="-34">releaseTask?</label>
 			<nail x="8" y="0"/>
 		</transition>
 		<transition>
-			<source ref="id12"/>
-			<target ref="id11"/>
+			<source ref="id11"/>
+			<target ref="id10"/>
 			<label kind="synchronisation" x="-255" y="-60">claim!</label>
 			<label kind="assignment" x="-314" y="-34">synchronizationRequest = id</label>
 		</transition>
@@ -682,9 +678,9 @@ findPath(false)</label>
 		<declaration>clock t;
 
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
-meta position tasks[MAX_T];
+meta position tasks[MAX_TASK];
 //to keep track of the actual number of task present in the tasks array
-int[0, MAX_T-1] actualLength;
+int[0, MAX_TASK] actualLength;
 //here there is the id of the robot which has claimed a task
 int[-1,NUM_OF_ROBOTS] actualRobotId;
 //used to signal if the max capacity of the array is reached
@@ -695,7 +691,7 @@ bool allPodsUsed;
 //to initialize every local variable
 void settingUp() {
     int j;
-    for (j = 0; j &lt; MAX_T; j++) {
+    for (j = 0; j &lt; MAX_TASK; j++) {
         tasks[j] = createPosition(-1,-1);
     }
     actualLength = 0;
@@ -782,7 +778,7 @@ void addTask(int randomValue) {
     
     
     //the array has reached the max length possible?
-    if (actualLength &lt; MAX_T) {
+    if (actualLength &lt; MAX_TASK) {
         position taskPos = selectAPod(randomValue);
         tasks[actualLength] = taskPos;
         actualLength += 1;
@@ -829,56 +825,56 @@ void takeTask() {
     }
     else {
         // if there are no task, we make sure that the robot cannot "re-do" the previous task
-        robotTask[actualRobotId] = createPosition(-1, -1);
+        robotTask[actualRobotId] = nullPosition;
     }
     actualRobotId = -1;
 }</declaration>
-		<location id="id16" x="-229" y="-119">
+		<location id="id15" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
 			<label kind="invariant" x="-246" y="-170">t &lt;= T</label>
 		</location>
-		<location id="id17" x="25" y="-119">
+		<location id="id16" x="25" y="-119">
 			<name x="42" y="-127">Adding_task</name>
 			<committed/>
 		</location>
-		<location id="id18" x="-229" y="93">
+		<location id="id17" x="-229" y="93">
 			<name x="-272" y="110">Releasing_task</name>
 			<committed/>
 		</location>
-		<location id="id19" x="-391" y="-195">
+		<location id="id18" x="-391" y="-195">
 			<name x="-401" y="-229">SettingUp</name>
 			<committed/>
 		</location>
-		<init ref="id19"/>
+		<init ref="id18"/>
 		<transition>
-			<source ref="id19"/>
-			<target ref="id16"/>
+			<source ref="id18"/>
+			<target ref="id15"/>
 			<label kind="assignment" x="-373" y="-157">settingUp()</label>
 		</transition>
 		<transition>
-			<source ref="id18"/>
-			<target ref="id16"/>
+			<source ref="id17"/>
+			<target ref="id15"/>
 			<label kind="synchronisation" x="-374" y="-17">releaseTask!</label>
 			<label kind="assignment" x="-357" y="8">takeTask()</label>
 			<nail x="-280" y="-8"/>
 		</transition>
 		<transition>
-			<source ref="id16"/>
-			<target ref="id18"/>
+			<source ref="id15"/>
+			<target ref="id17"/>
 			<label kind="synchronisation" x="-178" y="34">claim?</label>
 			<label kind="assignment" x="-204" y="59">actualRobotId = synchronizationRequest</label>
 			<nail x="-170" y="-8"/>
 		</transition>
 		<transition>
-			<source ref="id17"/>
-			<target ref="id16"/>
+			<source ref="id16"/>
+			<target ref="id15"/>
 			<label kind="select" x="-110" y="-51">tmp: int[0,NUM_OF_PODS-1]</label>
 			<label kind="assignment" x="-93" y="-25">t = 0, addTask(tmp)</label>
 			<nail x="-110" y="-42"/>
 		</transition>
 		<transition>
-			<source ref="id16"/>
-			<target ref="id17"/>
+			<source ref="id15"/>
+			<target ref="id16"/>
 			<label kind="guard" x="-136" y="-212">t &gt;= T</label>
 			<nail x="-110" y="-187"/>
 		</transition>
@@ -899,7 +895,11 @@ system h, r0, r1, r2, taskManager, semaphore;
     </system>
 	<queries>
 		<query>
-			<formula>E&lt;&gt;(h.Taking_item)</formula>
+			<formula>E&lt;&gt;(taskManager.exploded == true)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt;(taskManager.actualLength == 15)</formula>
 			<comment></comment>
 		</query>
 	</queries>
