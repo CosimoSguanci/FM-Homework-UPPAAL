@@ -4,7 +4,7 @@
 	<declaration>// Grid Dimension Declaration
 const int N = 10;
 const int M = 10;
-
+clock g;
 // Max task
 const int MAX_TASK = 25;
 
@@ -702,7 +702,7 @@ void computeDelay() {
 
 
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
-meta position tasks[MAX_TASK];
+position tasks[MAX_TASK];
 //to keep track of the actual number of task present in the tasks array
 int[0, MAX_TASK] actualLength;
 //here there is the id of the robot which has claimed a task
@@ -881,7 +881,7 @@ computeDelay()</label>
 			<source ref="id17"/>
 			<target ref="id15"/>
 			<label kind="synchronisation" x="-374" y="-17">releaseTask!</label>
-			<label kind="assignment" x="-357" y="8">takeTask()</label>
+			<label kind="assignment" x="-357" y="0">takeTask()</label>
 			<nail x="-280" y="-8"/>
 		</transition>
 		<transition>
@@ -921,7 +921,11 @@ system r0, r1, r2, taskManager, h, semaphore;
     </system>
 	<queries>
 		<query>
-			<formula>E&lt;&gt;(deadlock)</formula>
+			<formula>A[] not deadlock</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>E&lt;&gt;(g &lt; 100 &amp;&amp; deadlock)</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -929,11 +933,19 @@ system r0, r1, r2, taskManager, h, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt;(taskManager.actualLength == 15)</formula>
+			<formula>E&lt;&gt;(taskManager.actualLength == 25)</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=100000](&lt;&gt;taskManager.exploded == true)</formula>
+			<formula>Pr[&lt;=5](&lt;&gt;h.Taking_item)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager.exploded == true)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=1000](&lt;&gt;taskManager.actualLength == 1)</formula>
 			<comment></comment>
 		</query>
 	</queries>
