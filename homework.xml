@@ -105,8 +105,8 @@ position nextPositionShared = nullPosition;
 /*       Channels declaration        */
 /*************************************/
 
-chan go, takeItem, claim, canMove, cannotMove, noFeasibleMoves, tryingToMove, justMoved;
-broadcast chan releaseTask;</declaration>
+broadcast chan canMove, cannotMove;
+broadcast chan releaseTask, noFeasibleMoves, claim, tryingToMove, justMoved, go, takeItem;</declaration>
 	<template>
 		<name>Semaphore</name>
 		<declaration>// The next positions in which robots will go ASAP. They are set
@@ -201,12 +201,12 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 		<transition>
 			<source ref="id1"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="34" y="144">tryingToMove?</label>
+			<label kind="synchronisation" x="8" y="127">tryingToMove?</label>
 		</transition>
 	</template>
 	<template>
 		<name>Human</name>
-		<parameter>int H, int mean, int stdDev</parameter>
+		<parameter>int mean, int stdDev</parameter>
 		<declaration>clock t;
 
 int delay;
@@ -907,7 +907,7 @@ computeDelay()</label>
 	</template>
 	<system>// Place template instantiations here.
 
-h = Human(10, 3, 1);
+h = Human(3, 1);
 r0 = Robot(0, 2, 2);
 r1 = Robot(1, 2, 2);
 r2 = Robot(2, 2, 2);
@@ -930,6 +930,10 @@ system r0, r1, r2, taskManager, h, semaphore;
 		</query>
 		<query>
 			<formula>E&lt;&gt;(taskManager.actualLength == 15)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=100000](&lt;&gt;taskManager.exploded == true)</formula>
 			<comment></comment>
 		</query>
 	</queries>
