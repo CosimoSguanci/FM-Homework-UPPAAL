@@ -206,20 +206,26 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 	</template>
 	<template>
 		<name>Human</name>
-		<parameter>int H</parameter>
-		<declaration>clock t;</declaration>
+		<parameter>int H, int mean, int stdDev</parameter>
+		<declaration>clock t;
+
+int delay;
+
+void computeDelay() {
+    delay = fint(random_normal(mean, stdDev));
+}</declaration>
 		<location id="id3" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
 		</location>
 		<location id="id4" x="-42" y="-85">
 			<name x="-52" y="-119">Taking_item</name>
-			<label kind="invariant" x="-52" y="-68">t &lt;= H</label>
+			<label kind="invariant" x="-52" y="-68">t &lt;= delay</label>
 		</location>
 		<init ref="id3"/>
 		<transition>
 			<source ref="id4"/>
 			<target ref="id3"/>
-			<label kind="guard" x="-153" y="-17">t &gt;= H</label>
+			<label kind="guard" x="-153" y="-17">t &gt;= delay</label>
 			<label kind="synchronisation" x="-144" y="0">go!</label>
 			<nail x="-136" y="-25"/>
 		</transition>
@@ -227,13 +233,13 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 			<source ref="id3"/>
 			<target ref="id4"/>
 			<label kind="synchronisation" x="-170" y="-187">takeItem?</label>
-			<label kind="assignment" x="-153" y="-170">t = 0</label>
+			<label kind="assignment" x="-153" y="-170">t = 0, computeDelay()</label>
 			<nail x="-136" y="-144"/>
 		</transition>
 	</template>
 	<template>
 		<name>Robot</name>
-		<parameter>int id, int K</parameter>
+		<parameter>int id, int K, int lambda</parameter>
 		<declaration>clock t;
 
 // Notable positions that the robot must remember
@@ -540,8 +546,8 @@ void updateGridIfFirstMove() {
 			<name x="-136" y="17">ClaimingTask</name>
 		</location>
 		<location id="id11" x="-399" y="0">
-			<name x="-391" y="8">idle</name>
-			<committed/>
+			<name x="-382" y="0">idle</name>
+			<label kind="exponentialrate" x="-391" y="25">lambda</label>
 		</location>
 		<location id="id12" x="8" y="-68">
 			<name x="-93" y="-102">TaskChecking</name>
@@ -893,12 +899,12 @@ computeDelay()</label>
 	</template>
 	<system>// Place template instantiations here.
 
-h = Human(10);
-r0 = Robot(0, 2);
-r1 = Robot(1, 2);
-r2 = Robot(2, 2);
+h = Human(10, 3, 1);
+r0 = Robot(0, 2, 2);
+r1 = Robot(1, 2, 2);
+r2 = Robot(2, 2, 2);
 
-taskManager = TaskManager(7, 4);
+taskManager = TaskManager(15, 5);
 
 semaphore = Semaphore();
 
