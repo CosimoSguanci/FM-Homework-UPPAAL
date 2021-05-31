@@ -591,6 +591,7 @@ resetPath()</label>
 			<source ref="id13"/>
 			<target ref="id8"/>
 			<label kind="guard" x="212" y="-340">t &gt;= K</label>
+			<label kind="assignment" x="187" y="-306">noPossibleMoves = false</label>
 			<nail x="170" y="-314"/>
 		</transition>
 		<transition>
