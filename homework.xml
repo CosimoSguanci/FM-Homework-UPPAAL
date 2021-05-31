@@ -287,7 +287,7 @@ void updateGridAfterMove() {
 // True if the robot has to move to another cell to reach its target
 bool isNormalMove() {
     return 
-        !(currentPosition == deliveryPoint &amp;&amp; target == TO_DELIVERY) &amp;&amp;
+        !(target == TO_DELIVERY &amp;&amp; currentPosition == deliveryPoint) &amp;&amp;
         !(target == TO_POD &amp;&amp; currentPosition == currentPodPosition) &amp;&amp;
         !(target == BACK_TO_POD &amp;&amp; currentPosition == currentPodPosition);
 }
@@ -523,66 +523,74 @@ void updateGridIfFirstMove() {
 }
 
 </declaration>
-		<location id="id5" x="603" y="229">
-			<name x="620" y="221">Moving</name>
-			<label kind="invariant" x="620" y="238">t &lt;= K</label>
+		<location id="id5" x="892" y="450">
+			<name x="909" y="442">Moving</name>
+			<label kind="invariant" x="909" y="459">t &lt;= K</label>
 		</location>
-		<location id="id6" x="476" y="450">
-			<name x="442" y="476">DecideAction</name>
+		<location id="id6" x="280" y="459">
+			<name x="246" y="485">DecideAction</name>
 			<committed/>
 		</location>
-		<location id="id7" x="603" y="-68">
-			<name x="593" y="-102">WaitingGreenLight</name>
+		<location id="id7" x="892" y="-68">
+			<name x="882" y="-102">WaitingGreenLight</name>
 			<committed/>
 		</location>
 		<location id="id8" x="297" y="-68">
 			<name x="238" y="-110">DecideDirection</name>
 			<committed/>
 		</location>
-		<location id="id9" x="0" y="170">
-			<name x="-127" y="161">WaitingHuman</name>
+		<location id="id9" x="-51" y="170">
+			<name x="-178" y="161">WaitingHuman</name>
 		</location>
-		<location id="id10" x="-85" y="0">
-			<name x="-136" y="17">ClaimingTask</name>
+		<location id="id10" x="-144" y="0">
+			<name x="-195" y="17">ClaimingTask</name>
 		</location>
 		<location id="id11" x="-399" y="0">
-			<name x="-382" y="0">idle</name>
-			<label kind="exponentialrate" x="-391" y="25">lambda</label>
+			<name x="-450" y="-25">idle</name>
+			<label kind="exponentialrate" x="-467" y="-8">lambda</label>
 		</location>
-		<location id="id12" x="8" y="-68">
-			<name x="-93" y="-102">TaskChecking</name>
+		<location id="id12" x="-42" y="-68">
+			<name x="-143" y="-102">TaskChecking</name>
 			<committed/>
 		</location>
 		<location id="id13" x="357" y="-314">
 			<name x="331" y="-348">WaitingForPossibleMoves</name>
 			<label kind="invariant" x="382" y="-323">t &lt;= K</label>
 		</location>
-		<location id="id14" x="-195" y="-161">
-			<name x="-221" y="-195">WaitingTask</name>
-			<label kind="invariant" x="-212" y="-144">t &lt;= K</label>
+		<location id="id14" x="-306" y="-161">
+			<name x="-332" y="-195">WaitingTask</name>
+			<label kind="invariant" x="-323" y="-144">t &lt;= K</label>
 		</location>
 		<init ref="id11"/>
 		<transition>
+			<source ref="id8"/>
+			<target ref="id6"/>
+			<label kind="guard" x="280" y="161">currentPosition == goal</label>
+			<nail x="425" y="153"/>
+		</transition>
+		<transition>
 			<source ref="id14"/>
 			<target ref="id11"/>
-			<label kind="guard" x="-314" y="-187">t &gt;= K</label>
+			<label kind="guard" x="-442" y="-178">t &gt;= K</label>
 			<nail x="-399" y="-161"/>
 		</transition>
 		<transition>
 			<source ref="id12"/>
 			<target ref="id14"/>
-			<label kind="guard" x="-93" y="-195">robotTask[id] == nullPosition</label>
-			<label kind="assignment" x="-85" y="-212">t = 0</label>
-			<nail x="8" y="-161"/>
+			<label kind="guard" x="-212" y="-187">robotTask[id] == nullPosition</label>
+			<label kind="assignment" x="-204" y="-204">t = 0</label>
+			<nail x="-42" y="-161"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id8"/>
-			<label kind="guard" x="195" y="161">target == TO_POD &amp;&amp;
+			<label kind="guard" x="552" y="102">target == TO_POD &amp;&amp;
 currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="195" y="204">takePod(),
+			<label kind="assignment" x="552" y="136">takePod(),
 updateTarget(TO_DELIVERY),
 findPath(false)</label>
+			<nail x="544" y="408"/>
+			<nail x="552" y="59"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -610,47 +618,47 @@ resetPath()</label>
 		<transition>
 			<source ref="id12"/>
 			<target ref="id8"/>
-			<label kind="guard" x="25" y="-136">robotTask[id] != nullPosition</label>
-			<label kind="assignment" x="25" y="-119">updateTarget(TO_POD),
+			<label kind="guard" x="17" y="-144">robotTask[id] != nullPosition</label>
+			<label kind="assignment" x="17" y="-127">updateTarget(TO_POD),
 updateGridIfFirstMove(),
 findPath(false)</label>
 		</transition>
 		<transition>
 			<source ref="id5"/>
 			<target ref="id6"/>
-			<label kind="guard" x="561" y="306">t &gt;= K</label>
-			<label kind="synchronisation" x="561" y="323">justMoved!</label>
-			<label kind="assignment" x="561" y="340">updateGridAfterMove(),
+			<label kind="guard" x="629" y="416">t &gt;= K</label>
+			<label kind="synchronisation" x="629" y="433">justMoved!</label>
+			<label kind="assignment" x="629" y="450">updateGridAfterMove(),
 justMovedRobotId = id,
 advancePath()</label>
 		</transition>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id5"/>
-			<label kind="synchronisation" x="612" y="-17">canMove?</label>
-			<label kind="assignment" x="612" y="0">t = 0</label>
+			<label kind="synchronisation" x="901" y="136">canMove?</label>
+			<label kind="assignment" x="901" y="153">t = 0</label>
 		</transition>
 		<transition>
 			<source ref="id7"/>
 			<target ref="id8"/>
-			<label kind="synchronisation" x="408" y="-204">cannotMove?</label>
-			<label kind="assignment" x="408" y="-187">findPath(true)</label>
-			<nail x="450" y="-161"/>
+			<label kind="synchronisation" x="552" y="-229">cannotMove?</label>
+			<label kind="assignment" x="552" y="-212">findPath(true)</label>
+			<nail x="595" y="-187"/>
 		</transition>
 		<transition>
 			<source ref="id8"/>
 			<target ref="id7"/>
-			<label kind="guard" x="365" y="-51">!noPossibleMoves</label>
-			<label kind="synchronisation" x="382" y="-34">tryingToMove!</label>
-			<label kind="assignment" x="331" y="-102">nextPosition = getNextMove(),
+			<label kind="guard" x="484" y="-51">!noPossibleMoves &amp;&amp; currentPosition != goal</label>
+			<label kind="synchronisation" x="484" y="-34">tryingToMove!</label>
+			<label kind="assignment" x="484" y="-102">nextPosition = getNextMove(),
 nextPositionRobotId = id,
 nextPositionShared = nextPosition</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id8"/>
-			<label kind="guard" x="425" y="102">isNormalMove()</label>
-			<nail x="501" y="51"/>
+			<label kind="guard" x="68" y="263">isNormalMove()</label>
+			<nail x="127" y="289"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -658,27 +666,27 @@ nextPositionShared = nextPosition</label>
 			<label kind="guard" x="-255" y="246">currentPosition == deliveryPoint &amp;&amp; 
 target == TO_DELIVERY</label>
 			<label kind="synchronisation" x="-178" y="289">takeItem!</label>
-			<nail x="0" y="340"/>
+			<nail x="-51" y="382"/>
 		</transition>
 		<transition>
 			<source ref="id9"/>
 			<target ref="id8"/>
-			<label kind="synchronisation" x="102" y="25">go?</label>
-			<label kind="assignment" x="42" y="51">updateTarget(BACK_TO_POD),
+			<label kind="synchronisation" x="17" y="42">go?</label>
+			<label kind="assignment" x="-43" y="76">updateTarget(BACK_TO_POD),
 findPath(false)</label>
-			<nail x="8" y="68"/>
+			<nail x="-51" y="76"/>
 		</transition>
 		<transition>
 			<source ref="id10"/>
 			<target ref="id12"/>
-			<label kind="synchronisation" x="17" y="-34">releaseTask?</label>
-			<nail x="8" y="0"/>
+			<label kind="synchronisation" x="-34" y="-34">releaseTask?</label>
+			<nail x="-42" y="0"/>
 		</transition>
 		<transition>
 			<source ref="id11"/>
 			<target ref="id10"/>
-			<label kind="synchronisation" x="-255" y="-60">claim!</label>
-			<label kind="assignment" x="-314" y="-34">synchronizationRequest = id</label>
+			<label kind="synchronisation" x="-297" y="-51">claim!</label>
+			<label kind="assignment" x="-365" y="-34">synchronizationRequest = id</label>
 		</transition>
 	</template>
 	<template>
@@ -904,12 +912,12 @@ r0 = Robot(0, 2, 2);
 r1 = Robot(1, 2, 2);
 r2 = Robot(2, 2, 2);
 
-taskManager = TaskManager(15, 5);
+taskManager = TaskManager(7, 3);
 
 semaphore = Semaphore();
 
 // List one or more processes to be composed into a system.
-system h, r0, r1, r2, taskManager, semaphore;
+system r0, r1, r2, taskManager, h, semaphore;
     </system>
 	<queries>
 		<query>
