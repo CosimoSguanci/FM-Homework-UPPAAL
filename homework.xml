@@ -149,11 +149,13 @@ bool isEmptyOrPod(position pos) {
         
 }</declaration>
 		<location id="id0" x="-136" y="-110">
+			<name x="-146" y="-144">CannotMoveInThisCell</name>
 		</location>
 		<location id="id1" x="102" y="68">
 			<name x="0" y="59">initial_state</name>
 		</location>
 		<location id="id2" x="-17" y="195">
+			<name x="-25" y="212">SomeoneTryingToMove</name>
 			<committed/>
 		</location>
 		<init ref="id1"/>
@@ -177,7 +179,7 @@ bool isEmptyOrPod(position pos) {
 		<transition>
 			<source ref="id0"/>
 			<target ref="id2"/>
-			<label kind="synchronisation" x="-127" y="195">canMove?</label>
+			<label kind="synchronisation" x="-136" y="195">tryingToMove?</label>
 			<nail x="-136" y="195"/>
 		</transition>
 		<transition>
@@ -563,8 +565,8 @@ void updateGridIfFirstMove() {
 		<transition>
 			<source ref="id12"/>
 			<target ref="id14"/>
-			<label kind="guard" x="-110" y="-187">robotTask[id] == nullPosition</label>
-			<label kind="assignment" x="-51" y="-161">t = 0</label>
+			<label kind="guard" x="-93" y="-195">robotTask[id] == nullPosition</label>
+			<label kind="assignment" x="-85" y="-212">t = 0</label>
 			<nail x="8" y="-161"/>
 		</transition>
 		<transition>
@@ -674,8 +676,15 @@ findPath(false)</label>
 	</template>
 	<template>
 		<name>TaskManager</name>
-		<parameter>int T</parameter>
+		<parameter>int mean, int stdDev</parameter>
 		<declaration>clock t;
+
+int delay;
+
+void computeDelay() {
+    delay = fint(random_normal(mean, stdDev));
+}
+
 
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
 meta position tasks[MAX_TASK];
@@ -831,7 +840,7 @@ void takeTask() {
 }</declaration>
 		<location id="id15" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
-			<label kind="invariant" x="-246" y="-170">t &lt;= T</label>
+			<label kind="invariant" x="-246" y="-170">t &lt;= delay</label>
 		</location>
 		<location id="id16" x="25" y="-119">
 			<name x="42" y="-127">Adding_task</name>
@@ -849,7 +858,9 @@ void takeTask() {
 		<transition>
 			<source ref="id18"/>
 			<target ref="id15"/>
-			<label kind="assignment" x="-373" y="-157">settingUp()</label>
+			<label kind="assignment" x="-399" y="-153">t = 0,
+settingUp(),
+computeDelay()</label>
 		</transition>
 		<transition>
 			<source ref="id17"/>
@@ -868,14 +879,14 @@ void takeTask() {
 		<transition>
 			<source ref="id16"/>
 			<target ref="id15"/>
-			<label kind="select" x="-110" y="-51">tmp: int[0,NUM_OF_PODS-1]</label>
-			<label kind="assignment" x="-93" y="-25">t = 0, addTask(tmp)</label>
+			<label kind="select" x="-110" y="-42">tmp: int[0,NUM_OF_PODS-1]</label>
+			<label kind="assignment" x="-110" y="-25">t = 0, addTask(tmp), computeDelay()</label>
 			<nail x="-110" y="-42"/>
 		</transition>
 		<transition>
 			<source ref="id15"/>
 			<target ref="id16"/>
-			<label kind="guard" x="-136" y="-212">t &gt;= T</label>
+			<label kind="guard" x="-136" y="-212">t &gt;= delay</label>
 			<nail x="-110" y="-187"/>
 		</transition>
 	</template>
@@ -886,7 +897,7 @@ r0 = Robot(0, 2);
 r1 = Robot(1, 2);
 r2 = Robot(2, 2);
 
-taskManager = TaskManager(15);
+taskManager = TaskManager(7, 4);
 
 semaphore = Semaphore();
 
@@ -894,6 +905,10 @@ semaphore = Semaphore();
 system h, r0, r1, r2, taskManager, semaphore;
     </system>
 	<queries>
+		<query>
+			<formula>E&lt;&gt;(deadlock)</formula>
+			<comment></comment>
+		</query>
 		<query>
 			<formula>E&lt;&gt;(taskManager.exploded == true)</formula>
 			<comment></comment>
