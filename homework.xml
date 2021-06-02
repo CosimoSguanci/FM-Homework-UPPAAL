@@ -4,7 +4,10 @@
 	<declaration>// Grid Dimension Declaration
 const int N = 10;
 const int M = 10;
+
+// Global clock useful during debugging
 clock g;
+
 // Max task
 const int MAX_TASK = 15;
 
@@ -268,10 +271,10 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
 
-double delay;
+int delay;
 
 void computeDelay() {
-    delay = Normal(mean, stdDev);
+    delay = fint(Normal(mean, stdDev));
 }</declaration>
 		<location id="id6" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
@@ -284,17 +287,18 @@ void computeDelay() {
 		<transition>
 			<source ref="id7"/>
 			<target ref="id6"/>
-			<label kind="guard" x="-153" y="-17">t &gt;= delay</label>
-			<label kind="synchronisation" x="-144" y="0">go!</label>
-			<label kind="assignment" x="-153" y="17">delay = 0</label>
-			<nail x="-136" y="-25"/>
+			<label kind="guard" x="-161" y="-34">t &gt;= delay</label>
+			<label kind="synchronisation" x="-152" y="-17">go!</label>
+			<nail x="-136" y="-34"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id7"/>
-			<label kind="synchronisation" x="-170" y="-187">takeItem?</label>
-			<label kind="assignment" x="-170" y="-170">t = 0, computeDelay()</label>
-			<nail x="-136" y="-144"/>
+			<label kind="synchronisation" x="-178" y="-195">takeItem?</label>
+			<label kind="assignment" x="-178" y="-178">delay = 0, t = 0,
+computeDelay()</label>
+			<nail x="-229" y="-85"/>
+			<nail x="-136" y="-136"/>
 		</transition>
 	</template>
 	<template>
@@ -1076,7 +1080,7 @@ void updateGridIfFirstMove() {
 			<committed/>
 		</location>
 		<location id="id19" x="892" y="-68">
-			<name x="909" y="-68">DecideMove</name>
+			<name x="909" y="-68">WaitingGreenLight</name>
 		</location>
 		<location id="id20" x="297" y="-68">
 			<name x="238" y="-110">WaitingToMove</name>
@@ -1101,6 +1105,7 @@ void updateGridIfFirstMove() {
 			<label kind="invariant" x="-595" y="-136">t &lt;= K</label>
 		</location>
 		<location id="id26" x="544" y="-68">
+			<name x="484" y="-59">DecideMove</name>
 			<committed/>
 		</location>
 		<location id="id27" x="-85" y="-68">
@@ -1131,10 +1136,10 @@ findPath(false), t=0</label>
 		<transition>
 			<source ref="id19"/>
 			<target ref="id26"/>
-			<label kind="synchronisation" x="654" y="-25">cannotMove?</label>
-			<label kind="assignment" x="654" y="-8">findPath(true)</label>
-			<nail x="833" y="-25"/>
-			<nail x="603" y="-25"/>
+			<label kind="synchronisation" x="663" y="-34">cannotMove?</label>
+			<label kind="assignment" x="663" y="-17">findPath(true)</label>
+			<nail x="841" y="-34"/>
+			<nail x="603" y="-34"/>
 		</transition>
 		<transition>
 			<source ref="id20"/>
@@ -1243,10 +1248,10 @@ findPath(false), t = 0</label>
 		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
 
-double delay;
+int delay;
 
 void computeDelay() {
-    delay = Normal(mean, stdDev);
+    delay = fint(Normal(mean, stdDev));
 }
 
 
@@ -1406,12 +1411,12 @@ void takeTask() {
 			<name x="-239" y="-153">Idle</name>
 			<label kind="invariant" x="-246" y="-170">t &lt;= delay</label>
 		</location>
-		<location id="id29" x="25" y="-119">
-			<name x="42" y="-127">Adding_task</name>
+		<location id="id29" x="34" y="-119">
+			<name x="51" y="-127">Adding_task</name>
 			<committed/>
 		</location>
-		<location id="id30" x="-229" y="93">
-			<name x="-272" y="110">Releasing_task</name>
+		<location id="id30" x="-306" y="93">
+			<name x="-349" y="110">Releasing_task</name>
 			<committed/>
 		</location>
 		<location id="id31" x="-391" y="-195">
@@ -1422,47 +1427,47 @@ void takeTask() {
 		<transition>
 			<source ref="id31"/>
 			<target ref="id28"/>
-			<label kind="assignment" x="-399" y="-153">t = 0,
+			<label kind="assignment" x="-391" y="-178">t = 0,
 settingUp(),
 computeDelay()</label>
 		</transition>
 		<transition>
 			<source ref="id30"/>
 			<target ref="id28"/>
-			<label kind="synchronisation" x="-374" y="-17">releaseTask!</label>
-			<label kind="assignment" x="-357" y="0">takeTask()</label>
-			<nail x="-280" y="-8"/>
+			<label kind="synchronisation" x="-408" y="-34">releaseTask!</label>
+			<label kind="assignment" x="-408" y="-17">takeTask()</label>
+			<nail x="-323" y="-34"/>
 		</transition>
 		<transition>
 			<source ref="id28"/>
 			<target ref="id30"/>
-			<label kind="synchronisation" x="-178" y="34">claim?</label>
-			<label kind="assignment" x="-204" y="59">actualRobotId = synchronizationRequest</label>
-			<nail x="-170" y="-8"/>
+			<label kind="synchronisation" x="-204" y="-8">claim?</label>
+			<label kind="assignment" x="-221" y="8">actualRobotId = synchronizationRequest</label>
+			<nail x="-212" y="0"/>
 		</transition>
 		<transition>
 			<source ref="id29"/>
 			<target ref="id28"/>
-			<label kind="select" x="-110" y="-42">tmp: int[0,NUM_OF_PODS-1]</label>
-			<label kind="assignment" x="-110" y="-25">t = 0, addTask(tmp), computeDelay()</label>
-			<nail x="-110" y="-42"/>
+			<label kind="select" x="-136" y="-76">tmp: int[0,NUM_OF_PODS-1]</label>
+			<label kind="assignment" x="-136" y="-59">t = 0, addTask(tmp), delay = 0,
+computeDelay()</label>
+			<nail x="-93" y="-76"/>
 		</transition>
 		<transition>
 			<source ref="id28"/>
 			<target ref="id29"/>
-			<label kind="guard" x="-144" y="-220">t &gt;= delay</label>
-			<label kind="assignment" x="-144" y="-204">delay = 0</label>
-			<nail x="-110" y="-178"/>
+			<label kind="guard" x="-119" y="-204">t &gt;= delay</label>
+			<nail x="-93" y="-178"/>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
 
-h = Human(3.0, 0.0);
+h = Human(5.0, 1.0);
 r0 = Robot2(0, 2, 2);
 r1 = Robot2(1, 2, 2);
 r2 = Robot2(2, 2, 2);
 
-taskManager = TaskManager(10.0, 0.0);
+taskManager = TaskManager(20.0, 1.0);
 
 semaphore = Semaphore2();
 
