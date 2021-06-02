@@ -6,7 +6,7 @@ const int N = 10;
 const int M = 10;
 clock g;
 // Max task
-const int MAX_TASK = 25;
+const int MAX_TASK = 15;
 
 /************************************/
 /*     Custom types declaration     */
@@ -32,6 +32,11 @@ position createPosition(int row, int col) {
     pos.col = col;
     return pos;
 }
+
+// Used to model a normal distribution
+const double PI = 3.14159265358979323846;
+double stdNormal() { return sqrt(-2*ln(1-random(1)))*cos(2*PI*random(1)); }
+double Normal(double mean, double stdDev) { return (mean + stdDev * stdNormal()); }
 
 /*************************************/
 /*       Constants declaration       */
@@ -260,13 +265,13 @@ isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col
 	</template>
 	<template>
 		<name>Human</name>
-		<parameter>int mean, int stdDev</parameter>
+		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
 
-int delay;
+double delay;
 
 void computeDelay() {
-    delay = fint(random_normal(mean, stdDev));
+    delay = Normal(mean, stdDev);
 }</declaration>
 		<location id="id6" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
@@ -281,13 +286,14 @@ void computeDelay() {
 			<target ref="id6"/>
 			<label kind="guard" x="-153" y="-17">t &gt;= delay</label>
 			<label kind="synchronisation" x="-144" y="0">go!</label>
+			<label kind="assignment" x="-153" y="17">delay = 0</label>
 			<nail x="-136" y="-25"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id7"/>
 			<label kind="synchronisation" x="-170" y="-187">takeItem?</label>
-			<label kind="assignment" x="-153" y="-170">t = 0, computeDelay()</label>
+			<label kind="assignment" x="-170" y="-170">t = 0, computeDelay()</label>
 			<nail x="-136" y="-144"/>
 		</transition>
 	</template>
@@ -1189,8 +1195,8 @@ resetPath()</label>
 		<transition>
 			<source ref="id24"/>
 			<target ref="id27"/>
-			<label kind="guard" x="-289" y="-136">robotTask[id] != nullPosition</label>
-			<label kind="assignment" x="-289" y="-119">updateTarget(TO_POD),
+			<label kind="guard" x="-289" y="-144">robotTask[id] != nullPosition</label>
+			<label kind="assignment" x="-289" y="-127">updateTarget(TO_POD),
 updateGridIfFirstMove(),
 findPath(false)</label>
 		</transition>
@@ -1234,13 +1240,13 @@ findPath(false), t = 0</label>
 	</template>
 	<template>
 		<name>TaskManager</name>
-		<parameter>int mean, int stdDev</parameter>
+		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
 
-int delay;
+double delay;
 
 void computeDelay() {
-    delay = fint(random_normal(mean, stdDev));
+    delay = Normal(mean, stdDev);
 }
 
 
@@ -1444,18 +1450,19 @@ computeDelay()</label>
 		<transition>
 			<source ref="id28"/>
 			<target ref="id29"/>
-			<label kind="guard" x="-136" y="-212">t &gt;= delay</label>
-			<nail x="-110" y="-187"/>
+			<label kind="guard" x="-144" y="-220">t &gt;= delay</label>
+			<label kind="assignment" x="-144" y="-204">delay = 0</label>
+			<nail x="-110" y="-178"/>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
 
-h = Human(3, 1);
+h = Human(3.0, 0.0);
 r0 = Robot2(0, 2, 2);
 r1 = Robot2(1, 2, 2);
 r2 = Robot2(2, 2, 2);
 
-taskManager = TaskManager(7, 3);
+taskManager = TaskManager(10.0, 0.0);
 
 semaphore = Semaphore2();
 
@@ -1484,7 +1491,7 @@ system r0, r1, r2, taskManager, h, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager.exploded == true)</formula>
+			<formula>Pr[&lt;=1000](&lt;&gt;taskManager.exploded == true)</formula>
 			<comment></comment>
 		</query>
 		<query>
