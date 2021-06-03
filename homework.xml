@@ -61,28 +61,12 @@ const position nullPosition   = createPosition(-1, -1);
 // Number of robots
 const int NUM_OF_ROBOTS = 3;
 
+/********************************/
+/*       "Grid" variables       */
+/********************************/
+
 // Position of all the robots
 position robotPositions[NUM_OF_ROBOTS] = {nullPosition, nullPosition, nullPosition};
-
-/* // Possible states of each cell on the grid
-const int EMPTY     = 0;
-const int ROBOT     = 1;
-const int POD       = 2;
-const int POD_ROBOT = 3; // pod + robot in the same cell
-
-// Grid composition
-int[0,3] grid[N][M] = {
-    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
-    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
-    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
-    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
-    {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
-    {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY}
-};*/
 
 // Initialization of Pods and their positions
 pod pods[NUM_OF_PODS] = {
@@ -95,7 +79,6 @@ pod pods[NUM_OF_PODS] = {
     {{9, 0}, false}, {{9, 1}, false}, {{9, 2}, false}, {{9, 3}, false},
     {{9, 4}, false}, {{9, 5}, false}
 };
-
 
 /********************************************/
 /*       Shared variables declaration       */
@@ -232,9 +215,6 @@ const int BACK_TO_POD = 2; // If the task was fullfilled but the pod has to retu
 // Next goal position for the robot
 position goal;
 
-// Path to follow
-//position path[N*M];
-
 // This function actually performs the move actions by changing robotPositions
 void updateSharedPosAfterMove() {
     // Update global position
@@ -298,16 +278,6 @@ void updateTarget(int[0,2] update){
     }
 }
 
-// Return the next position in the path to the goal
-//position getNextMove(){ return path[0]; }
-
-// Move already performed, so remove path[0] and shift up every position
-/*void advancePath(){
-    int i, max = N*M-1;
-    // Shifting everything up
-    for(i=0; i&lt;max; i++){ path[i] = path[i+1]; }
-}*/
-
 
 /********************************************/
 /*       Path Finding Support Functions     */
@@ -356,7 +326,7 @@ bool isFeasible(position p, bool reroute){
         if(reroute){
             // Position is already excluded nextPos --&gt; return false
             if(p.row==nextPosition.row &amp;&amp; p.col==nextPosition.col) { return false; }
-            // If pos == one of 4 pos near currentPos and it cotains a robot, then it isn't feasible
+            // If p == one of 4 pos near currentPos and it contains a robot, then it isn't feasible
             for(i=0; i&lt;4; i++){
                 // Generate position close to the current one
                 close = addPos(currentPosition, dir);
@@ -518,7 +488,7 @@ void findPath(position&amp; path[N*M], bool reroute){
     } else { noPossibleMoves = true; }
 }
 
-position findPath2(bool reroute){
+position getNextMove(bool reroute){
     int i;
     position path[N*M];
     for(i=0; i&lt;N*M; i++) { path[i] = NULL; }
@@ -534,8 +504,8 @@ position findPath2(bool reroute){
 			<name x="909" y="-68">WaitingGreenLight</name>
 		</location>
 		<location id="id7" x="297" y="-68">
-			<name x="238" y="-110">WaitingToMove</name>
-			<label kind="invariant" x="272" y="-127">t &lt;= K</label>
+			<name x="229" y="-119">WaitingToMove</name>
+			<label kind="invariant" x="263" y="-136">t &lt;= K</label>
 		</location>
 		<location id="id8" x="-42" y="170">
 			<name x="-169" y="161">WaitingHuman</name>
@@ -577,16 +547,16 @@ nextPositionShared = nextPosition</label>
 		<transition>
 			<source ref="id15"/>
 			<target ref="id7"/>
-			<label kind="guard" x="433" y="-229">noPossibleMoves</label>
-			<label kind="synchronisation" x="433" y="-212">noFeasibleMoves!</label>
-			<label kind="assignment" x="433" y="-195">noPossibleMoves = false, t=0</label>
-			<nail x="569" y="-153"/>
+			<label kind="guard" x="442" y="-263">noPossibleMoves</label>
+			<label kind="synchronisation" x="442" y="-246">noFeasibleMoves!</label>
+			<label kind="assignment" x="442" y="-229">noPossibleMoves = false, t=0</label>
+			<nail x="459" y="-170"/>
 		</transition>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id15"/>
-			<label kind="synchronisation" x="756" y="-178">cannotMove?</label>
-			<label kind="assignment" x="637" y="-144">nextPosition = findPath2(true)</label>
+			<label kind="synchronisation" x="722" y="-170">cannotMove?</label>
+			<label kind="assignment" x="595" y="-144">nextPosition = getNextMove(true)</label>
 			<nail x="850" y="-153"/>
 		</transition>
 		<transition>
@@ -633,7 +603,7 @@ justMovedRobotId = id</label>
 		<transition>
 			<source ref="id11"/>
 			<target ref="id12"/>
-			<label kind="guard" x="-484" y="-179">robotTask[id] == nullPosition</label>
+			<label kind="guard" x="-476" y="-178">robotTask[id] == nullPosition</label>
 			<label kind="assignment" x="-476" y="-196">t = 0</label>
 			<nail x="-340" y="-153"/>
 		</transition>
@@ -668,7 +638,7 @@ updatePosIfFirstTime()</label>
 			<target ref="id6"/>
 			<label kind="guard" x="586" y="-8">!noPossibleMoves</label>
 			<label kind="synchronisation" x="586" y="9">tryingToMove!</label>
-			<label kind="assignment" x="586" y="-59">nextPosition = findPath2(false),
+			<label kind="assignment" x="586" y="-59">nextPosition = getNextMove(false),
 nextPositionRobotId = id,
 nextPositionShared = nextPosition</label>
 		</transition>
@@ -782,8 +752,8 @@ position selectAPod(int tmp) {
 }
 
 int getNumOfAssignedPods() {
-    int num = 0;
-    int i;
+    int num = 0, i;
+
     for (i = 0; i &lt; NUM_OF_ROBOTS; i++) {
         if (!isEqual(robotTask[i], nullPosition)) { num++; }
     }
@@ -806,7 +776,6 @@ void addTask(int randomValue) {
         position taskPos = selectAPod(randomValue);
         tasks[actualLength] = taskPos;
         actualLength += 1;
-        exploded = false;
     } else { exploded = true; }
 
 }
@@ -893,9 +862,9 @@ computeDelay()</label>
 	<system>// Place template instantiations here.
 
 h = Human(12.0, 1.5);
-r0 = Robot(0, 1, 2);
-r1 = Robot(1, 1, 2);
-r2 = Robot(2, 1, 2);
+r0 = Robot(0, 3, 2);
+r1 = Robot(1, 3, 2);
+r2 = Robot(2, 3, 2);
 
 taskManager = TaskManager(180.0, 0.0);
 
