@@ -9,7 +9,7 @@ const int M = 10;
 clock g;
 
 // Max task
-const int MAX_TASK = 10;
+const int MAX_TASK = 25;
 
 /************************************/
 /*     Custom types declaration     */
@@ -41,6 +41,11 @@ const double PI = 3.14159265358979323846;
 double stdNormal() { return sqrt(-2*ln(1-random(1)))*cos(2*PI*random(1)); }
 double Normal(double mean, double stdDev) { return (mean + stdDev * stdNormal()); }
 
+// Add two positions
+position addPos(position a, position b){ return createPosition(a.row + b.row, a.col + b.col); }
+// Return true if 2 positions are equal
+bool isEqual(position a, position b){ return a.row==b.row &amp;&amp; a.col==b.col; }
+
 /*************************************/
 /*       Constants declaration       */
 /*************************************/
@@ -63,7 +68,7 @@ const int POD       = 2;
 const int POD_ROBOT = 3; // pod + robot in the same cell
 
 // Grid composition
-int[0,3] grid[N][M] = {
+/*int[0,3] grid[N][M] = {
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -74,7 +79,9 @@ int[0,3] grid[N][M] = {
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY}
-};
+};*/
+//
+position robotPositions[NUM_OF_ROBOTS] = {nullPosition, nullPosition, nullPosition};
 
 // Initialization of Pods and their positions
 pod pods[NUM_OF_PODS] = {
@@ -117,152 +124,56 @@ broadcast chan canMove, cannotMove;
 broadcast chan releaseTask, noFeasibleMoves, claim, tryingToMove, justMoved, go, takeItem;</declaration>
 	<template>
 		<name>Semaphore</name>
-		<declaration>// The next positions in which robots will go ASAP. They are set
-// when a robot is allowed to go to a cell, and they are reset to {-1, -1}
-// when the robot has performed the move
-position nextPositions[NUM_OF_ROBOTS] = {
-    nullPosition,
-    nullPosition,
-    nullPosition
-};
-
-// A function to check if the given position is already scheduled to be
-// occupied by another robot, that has not performed the move yet
-bool isAlreadyOccupiedForNextPositions(int row, int col) {
-    int i = 0;
-    for(i = 0; i &lt; NUM_OF_ROBOTS; i++) {
-        if(nextPositions[i].row == row &amp;&amp; nextPositions[i].col == col) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
-void setNextPositions(int row, int col, int robotId) {
-    nextPositions[robotId].row = row;
-    nextPositions[robotId].col = col;
-}
-
-bool isEmptyOrPod(position pos) {
-    bool empty, pod;
+		<declaration>bool hasRobot(position pos) {
+    bool robot = false;
+    int i;
 
     if(pos.row&gt;=0 &amp;&amp; pos.row&lt;N &amp;&amp; pos.col&gt;=0 &amp;&amp; pos.col&lt;M){
-        empty = grid[nextPositionShared.row][nextPositionShared.col] == EMPTY;
-        pod = grid[nextPositionShared.row][nextPositionShared.col] == POD;
-        return empty || pod;
+        // If there's a robot, obviously it isn't empty or has a pod
+        for(i=0; i&lt;NUM_OF_ROBOTS; i++){ if(isEqual(pos, robotPositions[i])) { robot = true; } }
+        return robot;
     } else { return false; }
-    
         
 }</declaration>
-		<location id="id0" x="-136" y="-110">
-			<name x="-146" y="-144">CannotMoveInThisCell</name>
-		</location>
-		<location id="id1" x="102" y="68">
-			<name x="0" y="59">initial_state</name>
-		</location>
-		<location id="id2" x="-17" y="195">
-			<name x="-25" y="212">SomeoneTryingToMove</name>
-			<committed/>
-		</location>
-		<init ref="id1"/>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id1"/>
-			<label kind="synchronisation" x="153" y="8">justMoved?</label>
-			<label kind="assignment" x="153" y="25">nextPositions[justMovedRobotId] = nullPosition</label>
-			<nail x="119" y="25"/>
-			<nail x="153" y="34"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id1"/>
-			<label kind="synchronisation" x="552" y="-144">noFeasibleMoves?</label>
-			<nail x="204" y="-110"/>
-			<nail x="773" y="-110"/>
-			<nail x="773" y="68"/>
-			<nail x="586" y="68"/>
-		</transition>
-		<transition>
-			<source ref="id0"/>
-			<target ref="id2"/>
-			<label kind="synchronisation" x="-136" y="195">tryingToMove?</label>
-			<nail x="-136" y="195"/>
-		</transition>
-		<transition>
-			<source ref="id2"/>
-			<target ref="id0"/>
-			<label kind="guard" x="-93" y="-59">!isEmptyOrPod(nextPositionShared) || 
-isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col)</label>
-			<label kind="synchronisation" x="-93" y="-25">cannotMove!</label>
-		</transition>
-		<transition>
-			<source ref="id2"/>
-			<target ref="id1"/>
-			<label kind="guard" x="161" y="102">isEmptyOrPod(nextPositionShared) &amp;&amp; 
-!isAlreadyOccupiedForNextPositions(nextPositionShared.row, nextPositionShared.col)</label>
-			<label kind="synchronisation" x="161" y="136">canMove!</label>
-			<label kind="assignment" x="161" y="152">setNextPositions(nextPositionShared.row, nextPositionShared.col, nextPositionRobotId)</label>
-			<nail x="170" y="195"/>
-		</transition>
-		<transition>
-			<source ref="id1"/>
-			<target ref="id2"/>
-			<label kind="synchronisation" x="8" y="127">tryingToMove?</label>
-		</transition>
-	</template>
-	<template>
-		<name>Semaphore2</name>
-		<declaration>bool isEmptyOrPod(position pos) {
-    bool empty, pod;
-
-    if(pos.row&gt;=0 &amp;&amp; pos.row&lt;N &amp;&amp; pos.col&gt;=0 &amp;&amp; pos.col&lt;M){
-        empty = grid[nextPositionShared.row][nextPositionShared.col] == EMPTY;
-        pod = grid[nextPositionShared.row][nextPositionShared.col] == POD;
-        return empty || pod;
-    } else { return false; }   
-        
-}</declaration>
-		<location id="id3" x="374" y="212">
+		<location id="id0" x="374" y="212">
 			<name x="391" y="187">initial_state</name>
 		</location>
-		<location id="id4" x="68" y="331">
+		<location id="id1" x="68" y="331">
 			<name x="0" y="348">SomeoneTryingToMove</name>
 			<committed/>
 		</location>
-		<location id="id5" x="68" y="212">
+		<location id="id2" x="68" y="212">
 			<name x="17" y="178">CannotMoveCell</name>
 		</location>
-		<init ref="id3"/>
+		<init ref="id0"/>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id3"/>
+			<source ref="id2"/>
+			<target ref="id0"/>
 			<label kind="synchronisation" x="195" y="195">noFeasibleMoves?</label>
 		</transition>
 		<transition>
-			<source ref="id5"/>
-			<target ref="id4"/>
+			<source ref="id2"/>
+			<target ref="id1"/>
 			<label kind="synchronisation" x="76" y="246">tryingToMove?</label>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id5"/>
-			<label kind="guard" x="-331" y="246">!isEmptyOrPod(nextPositionShared)</label>
+			<source ref="id1"/>
+			<target ref="id2"/>
+			<label kind="guard" x="-280" y="246">hasRobot(nextPositionShared)</label>
 			<label kind="synchronisation" x="-170" y="263">cannotMove!</label>
 			<nail x="-76" y="331"/>
 			<nail x="-76" y="212"/>
 		</transition>
 		<transition>
-			<source ref="id4"/>
-			<target ref="id3"/>
-			<label kind="guard" x="382" y="263">isEmptyOrPod(nextPositionShared)</label>
+			<source ref="id1"/>
+			<target ref="id0"/>
+			<label kind="guard" x="382" y="263">!hasRobot(nextPositionShared)</label>
 			<label kind="synchronisation" x="382" y="280">canMove!</label>
 			<nail x="374" y="331"/>
 		</transition>
 		<transition>
-			<source ref="id3"/>
-			<target ref="id4"/>
+			<source ref="id0"/>
+			<target ref="id1"/>
 			<label kind="synchronisation" x="204" y="280">tryingToMove?</label>
 		</transition>
 	</template>
@@ -276,26 +187,26 @@ int delay;
 void computeDelay() {
     delay = fint(Normal(mean, stdDev));
 }</declaration>
-		<location id="id6" x="-229" y="-85">
+		<location id="id3" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
 		</location>
-		<location id="id7" x="-42" y="-85">
+		<location id="id4" x="-42" y="-85">
 			<name x="-52" y="-119">Taking_item</name>
-			<label kind="invariant" x="-52" y="-68">t &lt;= delay</label>
+			<label kind="invariant" x="-52" y="-68">t &lt;= 10</label>
 		</location>
-		<init ref="id6"/>
+		<init ref="id3"/>
 		<transition>
-			<source ref="id6"/>
-			<target ref="id7"/>
+			<source ref="id3"/>
+			<target ref="id4"/>
 			<label kind="synchronisation" x="-178" y="-204">takeItem?</label>
 			<label kind="assignment" x="-178" y="-187">delay = 0, t = 0,
 computeDelay()</label>
 			<nail x="-136" y="-144"/>
 		</transition>
 		<transition>
-			<source ref="id7"/>
-			<target ref="id6"/>
-			<label kind="guard" x="-161" y="-34">t &gt;= delay</label>
+			<source ref="id4"/>
+			<target ref="id3"/>
+			<label kind="guard" x="-161" y="-34">t &gt;= 10</label>
 			<label kind="synchronisation" x="-152" y="-17">go!</label>
 			<nail x="-136" y="-34"/>
 		</transition>
@@ -307,472 +218,8 @@ computeDelay()</label>
 
 // Notable positions that the robot must remember
 position currentPosition = nullPosition;
-position currentPodPosition;
-position nextPosition;
-
-// True if the pathfinder cannot find a move that is acceptable by the Semaphore
-bool noPossibleMoves;
-
-// What is the robot goal in this phase
-int[0, 2] target;
-
-// Possible target states
-const int TO_DELIVERY = 0; // If the robot has taken the pod and has to carry it to the Human
-const int TO_POD      = 1; // If a task was given to the robot, and it has to go to pick up the pod
-const int BACK_TO_POD = 2; // If the task was fullfilled but the pod has to return to its initial position
-
-// Next goal position for the robot
-position goal;
-
-// Path to follow
-position path[N*M];
-
-// This function actually performs the move actions by changing the grid
-void updateGridAfterMove() {
-
-    if(grid[currentPosition.row][currentPosition.col] == ROBOT) {
-       grid[currentPosition.row][currentPosition.col] = EMPTY;
-    }
-    else if(grid[currentPosition.row][currentPosition.col] == POD_ROBOT) { // a cell is POD_ROBOT only when a pod has just been released
-        grid[currentPosition.row][currentPosition.col] = POD;
-    }
-
-    if(grid[nextPosition.row][nextPosition.col] == POD) {
-        grid[nextPosition.row][nextPosition.col] = POD_ROBOT;
-    }
-    else {
-        grid[nextPosition.row][nextPosition.col] = ROBOT;    
-    }
-    
-    currentPosition = nextPosition;
-}
-
-// True if the robot has to move to another cell to reach its target
-bool isNormalMove() {
-    return 
-        !(target == TO_DELIVERY &amp;&amp; currentPosition == deliveryPoint) &amp;&amp;
-        !(target == TO_POD &amp;&amp; currentPosition == currentPodPosition) &amp;&amp;
-        !(target == BACK_TO_POD &amp;&amp; currentPosition == currentPodPosition);
-}
-
-// Sets the pod as NOT TAKEN, called when the pod is returned back to its initial position
-void releasePod() {
-    int i;
-    for(i = 0; i &lt; NUM_OF_PODS; i++) {
-        if(pods[i].pos.row == currentPodPosition.row &amp;&amp; pods[i].pos.col == currentPodPosition.col) {
-            pods[i].taken = false;
-            grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
-            currentPodPosition = nullPosition;
-            return;
-        }
-    }
-}
-
-// Called when the robot is picking up a pod
-void takePod() { grid[currentPodPosition.row][currentPodPosition.col] = ROBOT; }
-
-// Used when robot change target to update it's variables
-void updateTarget(int[0,2] update){
-    // Simply update the tager variable
-    target = update;
-    
-    // Depending on target, update other wariables
-    if(update == TO_DELIVERY){
-        goal = deliveryPoint;
-    } else if(update == TO_POD){
-        currentPodPosition = robotTask[id];
-        goal = currentPodPosition;
-    } else if(update == BACK_TO_POD){
-        goal = currentPodPosition;
-    }
-}
-
-// Return the next position in the path to the goal
-position getNextMove(){ return path[0]; }
-
-// Move already performed, so remove path[0] and shift up every position
-void advancePath(){
-    int i, max = N*M-1;
-    // Shifting everything up
-    for(i=0; i&lt;max; i++){ path[i] = path[i+1]; }
-}
-
-
-/********************************************/
-/*       Path Finding Support Functions     */
-/********************************************/
-
-// Pathfinding helper variables
-const position UP     = createPosition(-1, 0);
-const position RIGHT  = createPosition(0, 1);
-const position DOWN   = createPosition(1, 0);
-const position LEFT   = createPosition(0, -1);
-const position NULL   = nullPosition;
-
-// Add two positions
-position addPos(position a, position b){ return createPosition(a.row + b.row, a.col + b.col); }
-// Copy a position
-position copy(position p){position ret = {p.row, p.col}; return ret;}
-// Return true if 2 positions are equal
-bool isEqual(position a, position b){ return a.row==b.row &amp;&amp; a.col==b.col; }
-// Reset to NULL position all path positions
-void resetPath(){ int i; for(i=0; i&lt;N*M; i++){ path[i] = nullPosition; } }
-
-// Get the next direction clockwise
-position getNextDir(position d){
-    if(isEqual(d, UP))           { return copy(RIGHT); }
-    else if(isEqual(d, RIGHT))   { return copy(DOWN); }
-    else if(isEqual(d, DOWN))    { return copy(LEFT); }
-    else                         { return copy(UP); }
-}
-
-// Get the previous direction clockwise
-position getPrevDir(position d){
-    if(isEqual(d, UP))           { return copy(LEFT); }
-    else if(isEqual(d, LEFT))    { return copy(DOWN); }
-    else if(isEqual(d, DOWN))    { return copy(RIGHT); }
-    else                         { return copy(UP); }
-}
-
-// Return true if a position is a "possible" position
-bool isFeasible(position p, bool reroute){
-    bool base;
-    int i;
-    position close, dir = UP;
-    
-    // Only if on the grid, check other things
-    if(p.row&gt;=0 &amp;&amp; p.row&lt;N &amp;&amp; p.col&gt;=0 &amp;&amp; p.col&lt;M){
-        // If robot is moving a pod, check if pos has a pod
-        if(target==BACK_TO_POD || target==TO_DELIVERY){
-            if(grid[p.row][p.col] == POD || grid[p.row][p.col] == POD_ROBOT) { return false;}
-        }
-        
-        // If this is after a cannotMove, perform additional checks
-        if(reroute){
-            // Position is already excluded nextPos --&gt; return false
-            if(p.row==nextPosition.row &amp;&amp; p.col==nextPosition.col)             { return false; }
-            // If pos == one of 4 pos near currentPos and it cotains a robot, then it isn't feasible
-            for(i=0; i&lt;4; i++){
-                // Generate position next current one
-                close = addPos(currentPosition, dir);
-                // If p is equal to this new pos 
-                if(p.row==close.row &amp;&amp; p.col==close.col){ 
-                    if(grid[p.row][p.col] == ROBOT || grid[p.row][p.col] == POD_ROBOT){ return false; }
-                }
-                dir = getNextDir(dir);
-            }  
-        }
-        // If none of the "bad" things happened, then it's a feasible position :)
-        return true;
-    }
-    // If it isn't on the grid, obviously it's unfeasible
-    return false;
-}
-
-// Romve the last position in the queue
-position remove(position&amp; queue[N*M], int&amp; len){
-    // Obtain correct pos
-    position pos = queue[len-1];
-    
-    // Move up one position every other 
-    queue[len-1] = nullPosition;
-    
-    // Update actual array length
-    len = len - 1;
-
-    return pos;
-}
-
-// Add position to the queue
-void add(position pos, position&amp; queue[N*M], int&amp; len){
-    // Do something only if enough space
-    if(len &lt; N*M){
-        // Insert new pos
-        queue[len] = pos;
-
-        // Increase length array
-        len = len + 1;
-    }
-    
-}
-
-// To eliminate very stupid paths, we decide the first direction to check in a greedy way
-position greedyStartDir(position p){
-    // Vector representing distance on x axis
-    int x = goal.col - p.col;
-    // Vector representing distance on y axis
-    int y = p.row - goal.row;
-    
-    // If abs(x) &gt;= abs(y) then the first direction to check should be RIGHT
-    if(abs(x) &gt;= abs(y)){
-        if (x&gt;=0)   { return getPrevDir(RIGHT); }
-        else        { return getPrevDir(LEFT); }
-    } else {
-        if (y&gt;=0)   { return getPrevDir(UP); }
-        else        { return getPrevDir(DOWN); }
-    }
-}
-
-
-
-/************************************************/
-/*     Path finding Algorithm (Backtracking)    */
-/************************************************/
-
-void findPath(bool reroute){
-    // Queue needed to seach the entire matrix
-    position queue[N*M];
-    // Current queue length
-    int len = 0;
-    // Matrix representing if a cell is already visited
-    bool visited[N][M];
-    // Control variables for while loop
-    bool searching = true;
-    bool found = false;
-    bool added = false;
-    // Miscellaneous
-    int i, j;
-    position dir, next, curPos;
-    
-    // Initialize visited matrix
-    for(i=0; i&lt;N; i++){ for(j=0; j&lt;M; j++){ visited[i][j] = false; } }
-    // Reset path
-    resetPath();
-
-    // Given that it was outside of the grid, set the robot on entryPoint
-    if(currentPosition == nullPosition) { curPos = entryPoint; }
-    // Else initialize curPos normally
-    else { curPos = currentPosition; }
-    
-    // Add first position that in the end will be removed
-    add(curPos, queue, len);
-    if(not isEqual(curPos, NULL)) { visited[curPos.row][curPos.col] = true; }
-    
-    while(searching &amp;&amp; not found){
-        if(len &gt; 0){
-            // Goal found, ending everything :)
-            if(isEqual(queue[len-1], goal)){ found = true; }
-            else {
-                // Set to visited the cell
-                visited[queue[len-1].row][queue[len-1].col] = true;
-            
-                // Let's start from one direction
-                dir = greedyStartDir(queue[len-1]);
-                // Check each direction
-                for(i=0; i&lt;4; i++){
-                    // Obtain next direction to check
-                    dir = getNextDir(dir);
-                    // Obtain the resulting position after "moving" in the specified direction
-                    next = addPos(queue[len-1], dir);
-                    // Only is feasible and not already visited, add the position to the queue
-                    if(isFeasible(next, reroute)){ 
-                        if(not visited[next.row][next.col]){
-                            add(next, queue, len);
-                            added = true;
-                            i=4; // Needed to end the direction loop
-                        }
-                    }
-                }
-                // If no position was added, then the current position is not part of the solution, so it's removed from queue
-                if(not added){ remove(queue, len); }
-                // Variable reset to be ready for next cycle
-                added = false;
-            }
-
-        } else { searching = false; }
-    }
-
-    if(found){
-        // Copy the queue from element 1 (0 element is useless as it is the current position)
-        for(i=1; i&lt;len; i++){ path[i - 1] = queue[i]; }
-    } else { noPossibleMoves = true; }
-}
-
-void updateGridIfFirstMove() {
-    if(currentPosition == nullPosition) {
-        currentPosition = entryPoint;
-        grid[currentPosition.row][currentPosition.col] = ROBOT;
-    }
-}
-
-</declaration>
-		<location id="id8" x="892" y="450">
-			<name x="909" y="442">Moving</name>
-			<label kind="invariant" x="909" y="459">t &lt;= K</label>
-		</location>
-		<location id="id9" x="280" y="459">
-			<name x="246" y="485">DecideAction</name>
-			<committed/>
-		</location>
-		<location id="id10" x="892" y="-68">
-			<name x="882" y="-102">WaitingGreenLight</name>
-			<committed/>
-		</location>
-		<location id="id11" x="297" y="-68">
-			<name x="238" y="-110">DecideDirection</name>
-			<committed/>
-		</location>
-		<location id="id12" x="-51" y="170">
-			<name x="-178" y="161">WaitingHuman</name>
-		</location>
-		<location id="id13" x="-144" y="0">
-			<name x="-195" y="17">ClaimingTask</name>
-		</location>
-		<location id="id14" x="-399" y="0">
-			<name x="-450" y="-25">idle</name>
-			<label kind="exponentialrate" x="-467" y="-8">lambda</label>
-		</location>
-		<location id="id15" x="-42" y="-68">
-			<name x="-143" y="-102">TaskChecking</name>
-			<committed/>
-		</location>
-		<location id="id16" x="357" y="-314">
-			<name x="331" y="-348">WaitingForPossibleMoves</name>
-			<label kind="invariant" x="382" y="-323">t &lt;= K</label>
-		</location>
-		<location id="id17" x="-306" y="-161">
-			<name x="-332" y="-195">WaitingTask</name>
-			<label kind="invariant" x="-323" y="-144">t &lt;= K</label>
-		</location>
-		<init ref="id14"/>
-		<transition>
-			<source ref="id11"/>
-			<target ref="id9"/>
-			<label kind="guard" x="280" y="161">currentPosition == goal</label>
-			<nail x="425" y="153"/>
-		</transition>
-		<transition>
-			<source ref="id17"/>
-			<target ref="id14"/>
-			<label kind="guard" x="-442" y="-178">t &gt;= K</label>
-			<nail x="-399" y="-161"/>
-		</transition>
-		<transition>
-			<source ref="id15"/>
-			<target ref="id17"/>
-			<label kind="guard" x="-212" y="-187">robotTask[id] == nullPosition</label>
-			<label kind="assignment" x="-204" y="-204">t = 0</label>
-			<nail x="-42" y="-161"/>
-		</transition>
-		<transition>
-			<source ref="id9"/>
-			<target ref="id11"/>
-			<label kind="guard" x="552" y="102">target == TO_POD &amp;&amp;
-currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="552" y="136">takePod(),
-updateTarget(TO_DELIVERY),
-findPath(false)</label>
-			<nail x="544" y="408"/>
-			<nail x="552" y="59"/>
-		</transition>
-		<transition>
-			<source ref="id9"/>
-			<target ref="id14"/>
-			<label kind="guard" x="-221" y="459">target == BACK_TO_POD &amp;&amp;
-currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="-221" y="493">releasePod(),
-resetPath()</label>
-			<nail x="-399" y="450"/>
-		</transition>
-		<transition>
-			<source ref="id16"/>
-			<target ref="id11"/>
-			<label kind="guard" x="178" y="-340">t &gt;= K</label>
-			<label kind="assignment" x="161" y="-306">noPossibleMoves = false,
-findPath(false)</label>
-			<nail x="136" y="-314"/>
-		</transition>
-		<transition>
-			<source ref="id11"/>
-			<target ref="id16"/>
-			<label kind="guard" x="348" y="-263">noPossibleMoves</label>
-			<label kind="synchronisation" x="348" y="-246">noFeasibleMoves!</label>
-			<label kind="assignment" x="348" y="-229">t = 0</label>
-		</transition>
-		<transition>
-			<source ref="id15"/>
-			<target ref="id11"/>
-			<label kind="guard" x="17" y="-144">robotTask[id] != nullPosition</label>
-			<label kind="assignment" x="17" y="-127">updateTarget(TO_POD),
-updateGridIfFirstMove(),
-findPath(false)</label>
-		</transition>
-		<transition>
-			<source ref="id8"/>
-			<target ref="id9"/>
-			<label kind="guard" x="629" y="416">t &gt;= K</label>
-			<label kind="synchronisation" x="629" y="433">justMoved!</label>
-			<label kind="assignment" x="629" y="450">updateGridAfterMove(),
-justMovedRobotId = id,
-advancePath()</label>
-		</transition>
-		<transition>
-			<source ref="id10"/>
-			<target ref="id8"/>
-			<label kind="synchronisation" x="901" y="136">canMove?</label>
-			<label kind="assignment" x="901" y="153">t = 0,
-noPossibleMoves = false</label>
-		</transition>
-		<transition>
-			<source ref="id10"/>
-			<target ref="id11"/>
-			<label kind="synchronisation" x="552" y="-229">cannotMove?</label>
-			<label kind="assignment" x="552" y="-212">findPath(true)</label>
-			<nail x="595" y="-187"/>
-		</transition>
-		<transition>
-			<source ref="id11"/>
-			<target ref="id10"/>
-			<label kind="guard" x="484" y="-51">!noPossibleMoves &amp;&amp; currentPosition != goal</label>
-			<label kind="synchronisation" x="484" y="-34">tryingToMove!</label>
-			<label kind="assignment" x="484" y="-102">nextPosition = getNextMove(),
-nextPositionRobotId = id,
-nextPositionShared = nextPosition</label>
-		</transition>
-		<transition>
-			<source ref="id9"/>
-			<target ref="id11"/>
-			<label kind="guard" x="68" y="263">isNormalMove()</label>
-			<nail x="127" y="289"/>
-		</transition>
-		<transition>
-			<source ref="id9"/>
-			<target ref="id12"/>
-			<label kind="guard" x="-255" y="246">currentPosition == deliveryPoint &amp;&amp; 
-target == TO_DELIVERY</label>
-			<label kind="synchronisation" x="-178" y="289">takeItem!</label>
-			<nail x="-51" y="382"/>
-		</transition>
-		<transition>
-			<source ref="id12"/>
-			<target ref="id11"/>
-			<label kind="synchronisation" x="17" y="42">go?</label>
-			<label kind="assignment" x="-43" y="76">updateTarget(BACK_TO_POD),
-findPath(false)</label>
-			<nail x="-51" y="76"/>
-		</transition>
-		<transition>
-			<source ref="id13"/>
-			<target ref="id15"/>
-			<label kind="synchronisation" x="-34" y="-34">releaseTask?</label>
-			<nail x="-42" y="0"/>
-		</transition>
-		<transition>
-			<source ref="id14"/>
-			<target ref="id13"/>
-			<label kind="synchronisation" x="-297" y="-51">claim!</label>
-			<label kind="assignment" x="-365" y="-34">synchronizationRequest = id</label>
-		</transition>
-	</template>
-	<template>
-		<name>Robot2</name>
-		<parameter>int id, int K, int lambda</parameter>
-		<declaration>clock t;
-
-// Notable positions that the robot must remember
-position currentPosition = nullPosition;
-position currentPodPosition;
-position nextPosition;
+position currentPodPosition = nullPosition;
+position nextPosition = nullPosition;
 
 // True if the pathfinder cannot find a move that is acceptable by the Semaphore
 bool noPossibleMoves;
@@ -791,23 +238,11 @@ position goal;
 // Path to follow
 //position path[N*M];
 
-// This function actually performs the move actions by changing the grid
-void updateGridAfterMove() {
-
-    if(grid[currentPosition.row][currentPosition.col] == ROBOT) {
-       grid[currentPosition.row][currentPosition.col] = EMPTY;
-    }
-    else if(grid[currentPosition.row][currentPosition.col] == POD_ROBOT) { // a cell is POD_ROBOT only when a pod has just been released
-        grid[currentPosition.row][currentPosition.col] = POD;
-    }
-
-    if(grid[nextPosition.row][nextPosition.col] == POD) {
-        grid[nextPosition.row][nextPosition.col] = POD_ROBOT;
-    }
-    else {
-        grid[nextPosition.row][nextPosition.col] = ROBOT;    
-    }
-    
+// This function actually performs the move actions by changing robotPositions
+void updateSharedPosAfterMove() {
+    // Update global position
+    robotPositions[id] = nextPosition;
+    // Update private position
     currentPosition = nextPosition;
 }
 
@@ -825,7 +260,6 @@ void releasePod() {
     for(i = 0; i &lt; NUM_OF_PODS; i++) {
         if(pods[i].pos.row == currentPodPosition.row &amp;&amp; pods[i].pos.col == currentPodPosition.col) {
             pods[i].taken = false;
-            grid[currentPodPosition.row][currentPodPosition.col] = POD_ROBOT;
             currentPodPosition = nullPosition;
             return;
         }
@@ -833,7 +267,23 @@ void releasePod() {
 }
 
 // Called when the robot is picking up a pod
-void takePod() { grid[currentPodPosition.row][currentPodPosition.col] = ROBOT; }
+void takePod() {
+    int i;
+    for(i = 0; i &lt; NUM_OF_PODS; i++) {
+        if(pods[i].pos.row == currentPodPosition.row &amp;&amp; pods[i].pos.col == currentPodPosition.col) {
+            pods[i].taken = true;
+            return;
+        }
+    }
+}
+
+// If robot isn't already on grid, add it
+void updatePosIfFirstTime(){
+    if(isEqual(currentPosition, nullPosition)){
+        currentPosition = entryPoint;
+        robotPositions[id] = currentPosition;
+    }
+}
 
 // Used when robot change target to update it's variables
 void updateTarget(int[0,2] update){
@@ -873,21 +323,17 @@ const position DOWN   = createPosition(1, 0);
 const position LEFT   = createPosition(0, -1);
 const position NULL   = nullPosition;
 
-// Add two positions
-position addPos(position a, position b){ return createPosition(a.row + b.row, a.col + b.col); }
-// Copy a position
-position copy(position p){position ret = {p.row, p.col}; return ret;}
-// Return true if 2 positions are equal
+
 bool isEqual(position a, position b){ return a.row==b.row &amp;&amp; a.col==b.col; }
 // Reset to NULL position all path positions
 //void resetPath(){ int i; for(i=0; i&lt;N*M; i++){ path[i] = nullPosition; } }
 
 // Get the next direction clockwise
 position getNextDir(position d){
-    if(isEqual(d, UP))           { return copy(RIGHT); }
-    else if(isEqual(d, RIGHT))   { return copy(DOWN); }
-    else if(isEqual(d, DOWN))    { return copy(LEFT); }
-    else                         { return copy(UP); }
+    if(isEqual(d, UP))           { return RIGHT; }
+    else if(isEqual(d, RIGHT))   { return DOWN; }
+    else if(isEqual(d, DOWN))    { return LEFT; }
+    else                         { return UP; }
 }
 
 // Return true if a position is a "possible" position
@@ -900,7 +346,7 @@ bool isFeasible(position p, position curPos, bool reroute){
     if(p.row&gt;=0 &amp;&amp; p.row&lt;N &amp;&amp; p.col&gt;=0 &amp;&amp; p.col&lt;M){
         // If robot is moving a pod, check if pos has a pod
         if(target==BACK_TO_POD || target==TO_DELIVERY){
-            if(grid[p.row][p.col] == POD || grid[p.row][p.col] == POD_ROBOT) { return false;}
+            for(i=0; i&lt;NUM_OF_PODS; i++){ if(isEqual(p, pods[i].pos) &amp;&amp; !pods[i].taken) { return false;} }
         }
         
         // If this is after a cannotMove, perform additional checks
@@ -909,11 +355,11 @@ bool isFeasible(position p, position curPos, bool reroute){
             if(p.row==nextPosition.row &amp;&amp; p.col==nextPosition.col) { return false; }
             // If pos == one of 4 pos near currentPos and it cotains a robot, then it isn't feasible
             for(i=0; i&lt;4; i++){
-                // Generate position next current one
+                // Generate position close to the current one
                 close = addPos(currentPosition, dir);
-                // If p is equal to this new pos 
+                // If p is equal to this new position
                 if(p.row==close.row &amp;&amp; p.col==close.col){ 
-                    if(grid[p.row][p.col] == ROBOT || grid[p.row][p.col] == POD_ROBOT){ return false; }
+                    for(i=0; i&lt;NUM_OF_ROBOTS; i++){ if(isEqual(robotPositions[i], p)) { return false; } }
                 }
                 dir = getNextDir(dir); 
             }
@@ -1075,57 +521,49 @@ position findPath2(bool reroute){
 
     findPath(path, reroute);
     return path[0];
-}
-
-void updateGridIfFirstMove() {
-    if(currentPosition == nullPosition) {
-        currentPosition = entryPoint;
-        grid[currentPosition.row][currentPosition.col] = ROBOT;
-    }
 }</declaration>
-		<location id="id18" x="289" y="459">
+		<location id="id5" x="289" y="459">
 			<name x="255" y="485">DecideAction</name>
 			<committed/>
 		</location>
-		<location id="id19" x="892" y="-68">
+		<location id="id6" x="892" y="-68">
 			<name x="909" y="-68">WaitingGreenLight</name>
 		</location>
-		<location id="id20" x="297" y="-68">
+		<location id="id7" x="297" y="-68">
 			<name x="238" y="-110">WaitingToMove</name>
 			<label kind="invariant" x="272" y="-127">t &lt;= K</label>
 		</location>
-		<location id="id21" x="-42" y="170">
+		<location id="id8" x="-42" y="170">
 			<name x="-169" y="161">WaitingHuman</name>
 		</location>
-		<location id="id22" x="-425" y="8">
+		<location id="id9" x="-425" y="8">
 			<name x="-476" y="25">ClaimingTask</name>
 		</location>
-		<location id="id23" x="-671" y="8">
+		<location id="id10" x="-671" y="8">
 			<name x="-722" y="-17">idle</name>
-			<label kind="exponentialrate" x="-681" y="42">lambda</label>
 		</location>
-		<location id="id24" x="-340" y="-68">
+		<location id="id11" x="-340" y="-68">
 			<name x="-451" y="-76">TaskChecking</name>
 			<committed/>
 		</location>
-		<location id="id25" x="-578" y="-153">
+		<location id="id12" x="-578" y="-153">
 			<name x="-604" y="-187">WaitingTask</name>
 			<label kind="invariant" x="-595" y="-136">t &lt;= K</label>
 		</location>
-		<location id="id26" x="544" y="-68">
+		<location id="id13" x="544" y="-68">
 			<name x="484" y="-59">DecideMove</name>
 			<committed/>
 		</location>
-		<location id="id27" x="-85" y="-68">
+		<location id="id14" x="-85" y="-68">
 			<committed/>
 		</location>
-		<location id="id28" x="756" y="-212">
+		<location id="id15" x="756" y="-212">
 			<committed/>
 		</location>
-		<init ref="id23"/>
+		<init ref="id10"/>
 		<transition>
-			<source ref="id28"/>
-			<target ref="id19"/>
+			<source ref="id15"/>
+			<target ref="id6"/>
 			<label kind="guard" x="901" y="-178">!noPossibleMoves</label>
 			<label kind="synchronisation" x="901" y="-161">tryingToMove!</label>
 			<label kind="assignment" x="901" y="-144">nextPositionRobotId = id,
@@ -1133,71 +571,71 @@ nextPositionShared = nextPosition</label>
 			<nail x="892" y="-144"/>
 		</transition>
 		<transition>
-			<source ref="id28"/>
-			<target ref="id20"/>
+			<source ref="id15"/>
+			<target ref="id7"/>
 			<label kind="guard" x="433" y="-229">noPossibleMoves</label>
 			<label kind="synchronisation" x="433" y="-212">noFeasibleMoves!</label>
 			<label kind="assignment" x="433" y="-195">noPossibleMoves = false, t=0</label>
 			<nail x="569" y="-153"/>
 		</transition>
 		<transition>
-			<source ref="id19"/>
-			<target ref="id28"/>
+			<source ref="id6"/>
+			<target ref="id15"/>
 			<label kind="synchronisation" x="722" y="-161">cannotMove?</label>
 			<label kind="assignment" x="629" y="-144">nextPosition = findPath2(true)</label>
 			<nail x="824" y="-144"/>
 		</transition>
 		<transition>
-			<source ref="id27"/>
-			<target ref="id20"/>
+			<source ref="id14"/>
+			<target ref="id7"/>
 			<label kind="guard" x="17" y="-161">currentPosition != goal</label>
 			<label kind="assignment" x="76" y="-144">t = 0</label>
 			<nail x="93" y="-127"/>
 		</transition>
 		<transition>
-			<source ref="id18"/>
-			<target ref="id20"/>
+			<source ref="id5"/>
+			<target ref="id7"/>
 			<label kind="guard" x="306" y="195">isNormalMove()</label>
 			<label kind="assignment" x="306" y="212">t = 0</label>
 		</transition>
 		<transition>
-			<source ref="id27"/>
-			<target ref="id20"/>
+			<source ref="id14"/>
+			<target ref="id7"/>
 			<label kind="guard" x="-17" y="-59">currentPosition == goal</label>
 			<label kind="assignment" x="-17" y="-42">takePod(),
 updateTarget(TO_DELIVERY),
 t=0</label>
 		</transition>
 		<transition>
-			<source ref="id20"/>
-			<target ref="id26"/>
+			<source ref="id7"/>
+			<target ref="id13"/>
 			<label kind="guard" x="391" y="-68">t &gt;= K</label>
 		</transition>
 		<transition>
-			<source ref="id19"/>
-			<target ref="id18"/>
+			<source ref="id6"/>
+			<target ref="id5"/>
 			<label kind="synchronisation" x="909" y="238">canMove?</label>
 			<label kind="assignment" x="909" y="263">noPossibleMoves = false,
-updateGridAfterMove(),
+updateSharedPosAfterMove(),
 justMovedRobotId = id</label>
 			<nail x="892" y="459"/>
 		</transition>
 		<transition>
-			<source ref="id25"/>
-			<target ref="id23"/>
+			<source ref="id12"/>
+			<target ref="id10"/>
 			<label kind="guard" x="-714" y="-170">t &gt;= K</label>
 			<nail x="-671" y="-153"/>
 		</transition>
 		<transition>
-			<source ref="id24"/>
-			<target ref="id25"/>
+			<source ref="id11"/>
+			<target ref="id12"/>
 			<label kind="guard" x="-484" y="-179">robotTask[id] == nullPosition</label>
 			<label kind="assignment" x="-476" y="-196">t = 0</label>
 			<nail x="-340" y="-153"/>
 		</transition>
 		<transition>
-			<source ref="id18"/>
-			<target ref="id20"/>
+			<source ref="id5"/>
+			<target ref="id7"/>
 			<label kind="guard" x="510" y="170">target == TO_POD &amp;&amp;
 currentPosition == currentPodPosition</label>
 			<label kind="assignment" x="510" y="204">takePod(),
@@ -1207,23 +645,23 @@ t=0</label>
 			<nail x="493" y="85"/>
 		</transition>
 		<transition>
-			<source ref="id18"/>
-			<target ref="id23"/>
+			<source ref="id5"/>
+			<target ref="id10"/>
 			<label kind="guard" x="-535" y="459">target == BACK_TO_POD &amp;&amp;
 currentPosition == currentPodPosition</label>
 			<label kind="assignment" x="-535" y="493">releasePod()</label>
 			<nail x="-671" y="442"/>
 		</transition>
 		<transition>
-			<source ref="id24"/>
-			<target ref="id27"/>
-			<label kind="guard" x="-289" y="-144">robotTask[id] != nullPosition</label>
-			<label kind="assignment" x="-289" y="-127">updateTarget(TO_POD),
-updateGridIfFirstMove()</label>
+			<source ref="id11"/>
+			<target ref="id14"/>
+			<label kind="guard" x="-297" y="-127">robotTask[id] != nullPosition</label>
+			<label kind="assignment" x="-297" y="-110">updateTarget(TO_POD),
+updatePosIfFirstTime()</label>
 		</transition>
 		<transition>
-			<source ref="id26"/>
-			<target ref="id19"/>
+			<source ref="id13"/>
+			<target ref="id6"/>
 			<label kind="guard" x="586" y="-8">!noPossibleMoves</label>
 			<label kind="synchronisation" x="586" y="9">tryingToMove!</label>
 			<label kind="assignment" x="586" y="-59">nextPosition = findPath2(false),
@@ -1231,30 +669,30 @@ nextPositionRobotId = id,
 nextPositionShared = nextPosition</label>
 		</transition>
 		<transition>
-			<source ref="id18"/>
-			<target ref="id21"/>
+			<source ref="id5"/>
+			<target ref="id8"/>
 			<label kind="guard" x="-34" y="221">currentPosition == deliveryPoint &amp;&amp; 
 target == TO_DELIVERY</label>
 			<label kind="synchronisation" x="-34" y="255">takeItem!</label>
 			<nail x="-42" y="356"/>
 		</transition>
 		<transition>
-			<source ref="id21"/>
-			<target ref="id20"/>
+			<source ref="id8"/>
+			<target ref="id7"/>
 			<label kind="synchronisation" x="195" y="93">go?</label>
 			<label kind="assignment" x="-8" y="127">updateTarget(BACK_TO_POD),
 t = 0</label>
 			<nail x="212" y="170"/>
 		</transition>
 		<transition>
-			<source ref="id22"/>
-			<target ref="id24"/>
-			<label kind="synchronisation" x="-323" y="-26">releaseTask?</label>
+			<source ref="id9"/>
+			<target ref="id11"/>
+			<label kind="synchronisation" x="-331" y="-8">releaseTask?</label>
 			<nail x="-340" y="8"/>
 		</transition>
 		<transition>
-			<source ref="id23"/>
-			<target ref="id22"/>
+			<source ref="id10"/>
+			<target ref="id9"/>
 			<label kind="synchronisation" x="-578" y="-34">claim!</label>
 			<label kind="assignment" x="-646" y="-17">synchronizationRequest = id</label>
 		</transition>
@@ -1263,13 +701,10 @@ t = 0</label>
 		<name>TaskManager</name>
 		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
-
 int delay;
 
-void computeDelay() {
-    delay = fint(Normal(mean, stdDev));
-}
-
+// Sample delay from normal distribution
+void computeDelay() { delay = fint(Normal(mean, stdDev)); }
 
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
 position tasks[MAX_TASK];
@@ -1294,23 +729,11 @@ void settingUp() {
     allPodsUsed = false;
 }
 
-//This checks the position of the pod to understand if it is the same of the pod in position i inside the tasks queue
-bool checkIdentity(pod myPod, int i) {
-    if (myPod.pos.row == tasks[i].row) {
-        if (myPod.pos.col == tasks[i].col) {
-            return true;
-        }
-    }
-    return false;
-}
-
 //This verify if the pod in input is present in the queue checking all the tasks array (if it is the case)
-bool thisPodPositionIsPresentInTasks(pod myPod) {
+bool podIsInTasks(pod myPod) {
     int i;
     for (i = 0; i &lt; actualLength; i++) {
-        if (checkIdentity(myPod, i)) {
-            return true;
-        }
+        if (isEqual(myPod.pos, tasks[i])) { return true; }
     }
     return false;
 }
@@ -1333,7 +756,7 @@ position selectAPod(int tmp) {
     bool in = true;
     position newPos = {-1, -1};
     while (in) {
-        if (!thisPodPositionIsPresentInTasks(pods[myTmp])) {
+        if (!podIsInTasks(pods[myTmp])) {
             if (!pods[myTmp].taken) {
                 newPos.row = pods[myTmp].pos.row;
                 newPos.col = pods[myTmp].pos.col;
@@ -1365,6 +788,7 @@ void addTask(int randomValue) {
     //every pods is tasked
     if ((actualLength + numberOfTakenPods) == NUM_OF_PODS) {
         allPodsUsed = true;
+        exploded = true; // tried to add, but no pods are available, so I lost the task
         return;
     }
     else
@@ -1415,7 +839,7 @@ void takeTask() {
         position ext;
         ext = extractFIFO();
         robotTask[actualRobotId] = ext;
-        setPodAsTaken(ext);
+        //setPodAsTaken(ext);
     }
     else {
         // if there are no task, we make sure that the robot cannot "re-do" the previous task
@@ -1423,73 +847,73 @@ void takeTask() {
     }
     actualRobotId = -1;
 }</declaration>
-		<location id="id29" x="-229" y="-119">
+		<location id="id16" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
-			<label kind="invariant" x="-246" y="-170">t &lt;= delay</label>
+			<label kind="invariant" x="-246" y="-170">t &lt;= 10</label>
 		</location>
-		<location id="id30" x="34" y="-119">
+		<location id="id17" x="34" y="-119">
 			<name x="51" y="-127">Adding_task</name>
 			<committed/>
 		</location>
-		<location id="id31" x="-306" y="93">
+		<location id="id18" x="-306" y="93">
 			<name x="-349" y="110">Releasing_task</name>
 			<committed/>
 		</location>
-		<location id="id32" x="-391" y="-195">
+		<location id="id19" x="-391" y="-195">
 			<name x="-401" y="-229">SettingUp</name>
 			<committed/>
 		</location>
-		<init ref="id32"/>
+		<init ref="id19"/>
 		<transition>
-			<source ref="id32"/>
-			<target ref="id29"/>
+			<source ref="id19"/>
+			<target ref="id16"/>
 			<label kind="assignment" x="-391" y="-178">t = 0,
 settingUp(),
 computeDelay()</label>
 		</transition>
 		<transition>
-			<source ref="id31"/>
-			<target ref="id29"/>
+			<source ref="id18"/>
+			<target ref="id16"/>
 			<label kind="synchronisation" x="-408" y="-34">releaseTask!</label>
 			<label kind="assignment" x="-408" y="-17">takeTask()</label>
 			<nail x="-323" y="-34"/>
 		</transition>
 		<transition>
-			<source ref="id29"/>
-			<target ref="id31"/>
+			<source ref="id16"/>
+			<target ref="id18"/>
 			<label kind="synchronisation" x="-204" y="-8">claim?</label>
 			<label kind="assignment" x="-221" y="8">actualRobotId = synchronizationRequest</label>
 			<nail x="-212" y="0"/>
 		</transition>
 		<transition>
-			<source ref="id30"/>
-			<target ref="id29"/>
+			<source ref="id17"/>
+			<target ref="id16"/>
 			<label kind="select" x="-136" y="-76">tmp: int[0,NUM_OF_PODS-1]</label>
 			<label kind="assignment" x="-136" y="-59">t = 0, addTask(tmp), delay = 0,
 computeDelay()</label>
 			<nail x="-93" y="-76"/>
 		</transition>
 		<transition>
-			<source ref="id29"/>
-			<target ref="id30"/>
-			<label kind="guard" x="-119" y="-204">t &gt;= delay</label>
+			<source ref="id16"/>
+			<target ref="id17"/>
+			<label kind="guard" x="-119" y="-204">t &gt;= 10</label>
 			<nail x="-93" y="-178"/>
 		</transition>
 	</template>
 	<system>// Place template instantiations here.
 
-h = Human(18.0, 1.5);
-r0 = Robot2(0, 3, 2);
-r1 = Robot2(1, 3, 2);
-r2 = Robot2(2, 3, 2);
+h = Human(12.0, 1.5);
+r0 = Robot(0, 1, 2);
+r1 = Robot(1, 1, 2);
+r2 = Robot(2, 1, 2);
 
-taskManager = TaskManager(60.0, 2.0);
+taskManager = TaskManager(180.0, 0.0);
 
-semaphore = Semaphore2();
+semaphore = Semaphore();
 
 // List one or more processes to be composed into a system.
 system r0, r1, r2, taskManager, h, semaphore;
-    </system>
+</system>
 	<queries>
 		<query>
 			<formula>A[] not deadlock</formula>
@@ -1512,11 +936,11 @@ system r0, r1, r2, taskManager, h, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=15000](&lt;&gt;taskManager.exploded == true)</formula>
+			<formula>Pr[&lt;=12000](&lt;&gt;taskManager.exploded == true)</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=1000](&lt;&gt;taskManager.actualLength == 2)</formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager.actualLength == 2)</formula>
 			<comment></comment>
 		</query>
 	</queries>
