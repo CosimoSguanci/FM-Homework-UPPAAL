@@ -61,14 +61,17 @@ const position nullPosition   = createPosition(-1, -1);
 // Number of robots
 const int NUM_OF_ROBOTS = 3;
 
-// Possible states of each cell on the grid
+// Position of all the robots
+position robotPositions[NUM_OF_ROBOTS] = {nullPosition, nullPosition, nullPosition};
+
+/* // Possible states of each cell on the grid
 const int EMPTY     = 0;
 const int ROBOT     = 1;
 const int POD       = 2;
 const int POD_ROBOT = 3; // pod + robot in the same cell
 
 // Grid composition
-/*int[0,3] grid[N][M] = {
+int[0,3] grid[N][M] = {
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY},
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -80,8 +83,6 @@ const int POD_ROBOT = 3; // pod + robot in the same cell
     {EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
     {POD, POD, POD, POD, POD, POD, EMPTY, EMPTY, EMPTY, EMPTY}
 };*/
-//
-position robotPositions[NUM_OF_ROBOTS] = {nullPosition, nullPosition, nullPosition};
 
 // Initialization of Pods and their positions
 pod pods[NUM_OF_PODS] = {
@@ -103,11 +104,7 @@ pod pods[NUM_OF_PODS] = {
 // set by taskManager, read by the robots when the broadcast channel is activate
 // every robot will read to his position and if the position is different from {-1,-1}
 // the robot will be able to move to that pod
-position robotTask[NUM_OF_ROBOTS] = {
-    nullPosition,
-    nullPosition,
-    nullPosition
-}; 
+position robotTask[NUM_OF_ROBOTS] = { nullPosition, nullPosition, nullPosition }; 
 
 int synchronizationRequest;  // used by TaskManager
 
@@ -132,7 +129,7 @@ broadcast chan releaseTask, noFeasibleMoves, claim, tryingToMove, justMoved, go,
         // If there's a robot, obviously it isn't empty or has a pod
         for(i=0; i&lt;NUM_OF_ROBOTS; i++){ if(isEqual(pos, robotPositions[i])) { robot = true; } }
         return robot;
-    } else { return false; }
+    } else { return true; }
         
 }</declaration>
 		<location id="id0" x="374" y="212">
@@ -159,8 +156,8 @@ broadcast chan releaseTask, noFeasibleMoves, claim, tryingToMove, justMoved, go,
 		<transition>
 			<source ref="id1"/>
 			<target ref="id2"/>
-			<label kind="guard" x="-280" y="246">hasRobot(nextPositionShared)</label>
-			<label kind="synchronisation" x="-170" y="263">cannotMove!</label>
+			<label kind="guard" x="-297" y="246">hasRobot(nextPositionShared)</label>
+			<label kind="synchronisation" x="-178" y="263">cannotMove!</label>
 			<nail x="-76" y="331"/>
 			<nail x="-76" y="212"/>
 		</transition>
@@ -337,8 +334,7 @@ position getNextDir(position d){
 }
 
 // Return true if a position is a "possible" position
-bool isFeasible(position p, position curPos, bool reroute){
-    bool base;
+bool isFeasible(position p, bool reroute){
     int i;
     position close, dir = UP;
     
@@ -346,7 +342,14 @@ bool isFeasible(position p, position curPos, bool reroute){
     if(p.row&gt;=0 &amp;&amp; p.row&lt;N &amp;&amp; p.col&gt;=0 &amp;&amp; p.col&lt;M){
         // If robot is moving a pod, check if pos has a pod
         if(target==BACK_TO_POD || target==TO_DELIVERY){
-            for(i=0; i&lt;NUM_OF_PODS; i++){ if(isEqual(p, pods[i].pos) &amp;&amp; !pods[i].taken) { return false;} }
+            // Check every pod is p is at the same position
+            for(i=0; i&lt;NUM_OF_PODS; i++){
+                // Check all pods if we are referring to same position
+                if(isEqual(p, pods[i].pos)) {
+                    // If the pod is still in its original position, then it isn't a feasible position
+                    if(!pods[i].taken){ return false; }
+                }
+            }
         }
         
         // If this is after a cannotMove, perform additional checks
@@ -372,7 +375,7 @@ bool isFeasible(position p, position curPos, bool reroute){
 }
 
 // Romve the last position in the queue
-position remove(position&amp; queue[N*M], int&amp; len){
+position removeLastFromQueue(position&amp; queue[N*M], int&amp; len){
     // Obtain correct pos
     position pos = queue[len-1];
     
@@ -386,7 +389,7 @@ position remove(position&amp; queue[N*M], int&amp; len){
 }
 
 // Add position to the queue
-void add(position pos, position&amp; queue[N*M], int&amp; len){
+void addToQueue(position pos, position&amp; queue[N*M], int&amp; len){
     // Do something only if enough space
     if(len &lt; N*M){
         // Insert new pos
@@ -473,34 +476,35 @@ void findPath(position&amp; path[N*M], bool reroute){
     else { curPos = currentPosition; }
     
     // Add first position that in the end will be removed
-    add(curPos, queue, len);
-    if(not isEqual(curPos, NULL)) { visited[curPos.row][curPos.col] = true; }
+    addToQueue(curPos, queue, len);
     
     while(searching &amp;&amp; not found){
         if(len &gt; 0){
+            curPos = queue[len-1];
+            
             // Goal found, ending everything :)
-            if(isEqual(queue[len-1], goal)){ found = true; }
+            if(isEqual(curPos, goal)){ found = true; }
             else {
                 // Set to visited the cell
-                visited[queue[len-1].row][queue[len-1].col] = true;
+                visited[curPos.row][curPos.col] = true;
             
                 // Let's set the sequence of best directions
-                greedyBestDir(queue[len-1], dirArray);
+                greedyBestDir(curPos, dirArray);
                 // Check each direction
                 for(i=0; i&lt;4; i++){
                     // Obtain the resulting position after "moving" in the specified direction
-                    next = addPos(queue[len-1], dirArray[i]);
+                    next = addPos(curPos, dirArray[i]);
                     // Only is feasible and not already visited, add the position to the queue
-                    if(isFeasible(next, queue[len-1], reroute)){ 
+                    if(isFeasible(next, reroute)){
                         if(not visited[next.row][next.col]){
-                            add(next, queue, len);
+                            addToQueue(next, queue, len);
                             added = true;
-                            i=4; // Needed to end the direction loop
+                            i=4; // Needed to end the loop
                         }
                     }
                 }
                 // If no position was added, then the current position is not part of the solution, so it's removed from queue
-                if(not added){ remove(queue, len); }
+                if(not added){ removeLastFromQueue(queue, len); }
                 // Variable reset to be ready for next cycle
                 added = false;
             }
@@ -557,7 +561,7 @@ position findPath2(bool reroute){
 		<location id="id14" x="-85" y="-68">
 			<committed/>
 		</location>
-		<location id="id15" x="756" y="-212">
+		<location id="id15" x="892" y="-255">
 			<committed/>
 		</location>
 		<init ref="id10"/>
@@ -581,9 +585,9 @@ nextPositionShared = nextPosition</label>
 		<transition>
 			<source ref="id6"/>
 			<target ref="id15"/>
-			<label kind="synchronisation" x="722" y="-161">cannotMove?</label>
-			<label kind="assignment" x="629" y="-144">nextPosition = findPath2(true)</label>
-			<nail x="824" y="-144"/>
+			<label kind="synchronisation" x="756" y="-178">cannotMove?</label>
+			<label kind="assignment" x="637" y="-144">nextPosition = findPath2(true)</label>
+			<nail x="850" y="-153"/>
 		</transition>
 		<transition>
 			<source ref="id14"/>
@@ -647,10 +651,10 @@ t=0</label>
 		<transition>
 			<source ref="id5"/>
 			<target ref="id10"/>
-			<label kind="guard" x="-535" y="459">target == BACK_TO_POD &amp;&amp;
+			<label kind="guard" x="-535" y="467">target == BACK_TO_POD &amp;&amp;
 currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="-535" y="493">releasePod()</label>
-			<nail x="-671" y="442"/>
+			<label kind="assignment" x="-535" y="501">releasePod(), robotTask[id] = nullPosition</label>
+			<nail x="-671" y="450"/>
 		</transition>
 		<transition>
 			<source ref="id11"/>
@@ -714,19 +718,14 @@ int[0, MAX_TASK] actualLength;
 int[-1,NUM_OF_ROBOTS] actualRobotId;
 //used to signal if the max capacity of the array is reached
 bool exploded;
-//used to signal if all pods in the grid is tasked
-bool allPodsUsed;
 
 //to initialize every local variable
 void settingUp() {
-    int j;
-    for (j = 0; j &lt; MAX_TASK; j++) {
-        tasks[j] = createPosition(-1,-1);
-    }
+    int i;
+    for (i=0; i&lt;MAX_TASK; i++) { tasks[i] = nullPosition; }
     actualLength = 0;
     actualRobotId = -1;
     exploded = false;
-    allPodsUsed = false;
 }
 
 //This verify if the pod in input is present in the queue checking all the tasks array (if it is the case)
@@ -734,6 +733,14 @@ bool podIsInTasks(pod myPod) {
     int i;
     for (i = 0; i &lt; actualLength; i++) {
         if (isEqual(myPod.pos, tasks[i])) { return true; }
+    }
+    return false;
+}
+
+bool podIsAssigned(pod myPod) {
+    int i;
+    for (i = 0; i &lt; NUM_OF_ROBOTS; i++) {
+        if (isEqual(myPod.pos, robotTask[i])) { return true; }
     }
     return false;
 }
@@ -752,29 +759,33 @@ int anotherTmp(int tmp) {
 //if it is not already in the tasks array and if it is not taken (a robot has taken it)
 //else continuing searching until finding a pod to add as a task (this could be a potential problem...)
 position selectAPod(int tmp) {
-    int myTmp = tmp;
-    bool in = true;
+    int myTmp = tmp, i;
     position newPos = {-1, -1};
-    while (in) {
+    
+    // Loop until you've checked all pods
+    for(i=0; i&lt;NUM_OF_PODS; i++) {
+        // If the pod isn't already in the task queue
         if (!podIsInTasks(pods[myTmp])) {
-            if (!pods[myTmp].taken) {
+            // If the pod isn't already assigned to any robot
+            if (!podIsAssigned(pods[myTmp])) {
                 newPos.row = pods[myTmp].pos.row;
                 newPos.col = pods[myTmp].pos.col;
-                in = false;
+                i = NUM_OF_PODS; // to end the loop
             }
         }
+
+        // Check another pod
         myTmp = anotherTmp(myTmp);
     }
+
     return newPos;
 }
 
-int getNumOfTakenPods() {
+int getNumOfAssignedPods() {
     int num = 0;
     int i;
-    for (i = 0; i &lt; NUM_OF_PODS; i++) {
-        if (pods[i].taken) {
-            num++;
-        }
+    for (i = 0; i &lt; NUM_OF_ROBOTS; i++) {
+        if (!isEqual(robotTask[i], nullPosition)) { num++; }
     }
     return num;
 }
@@ -782,17 +793,12 @@ int getNumOfTakenPods() {
 //selecting a position which corresponding to a free pod using the random value in input
 //adding it as task in the tasks array, updating the true length of it
 void addTask(int randomValue) {
-    
-    int numberOfTakenPods = getNumOfTakenPods();
      
     //every pods is tasked
-    if ((actualLength + numberOfTakenPods) == NUM_OF_PODS) {
-        allPodsUsed = true;
+    if ((actualLength + getNumOfAssignedPods()) &gt;= NUM_OF_PODS) {
         exploded = true; // tried to add, but no pods are available, so I lost the task
         return;
     }
-    else
-        allPodsUsed = false;
     
     
     //the array has reached the max length possible?
@@ -801,9 +807,8 @@ void addTask(int randomValue) {
         tasks[actualLength] = taskPos;
         actualLength += 1;
         exploded = false;
-    }
-    else
-        exploded = true;
+    } else { exploded = true; }
+
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -816,20 +821,9 @@ position extractFIFO() {
         tasks[i-1] = tasks[i];
         i++;
     }
-    tasks[i-1].row = -1;
-    tasks[i-1].col = -1;
+    tasks[i-1] = nullPosition;
     actualLength--;
     return tmp;
-}
-
-void setPodAsTaken(position podPos) {
-    int i;
-    for(i = 0; i &lt; NUM_OF_PODS; i++) {
-        if(pods[i].pos.row == podPos.row &amp;&amp; pods[i].pos.col == podPos.col) {
-            pods[i].taken = true;
-            return;
-        }
-    }
 }
 
 //estract a task from the queue and insert it in the robotTask array in the position represented by actualRobotId
@@ -839,12 +833,8 @@ void takeTask() {
         position ext;
         ext = extractFIFO();
         robotTask[actualRobotId] = ext;
-        //setPodAsTaken(ext);
     }
-    else {
-        // if there are no task, we make sure that the robot cannot "re-do" the previous task
-        robotTask[actualRobotId] = nullPosition;
-    }
+
     actualRobotId = -1;
 }</declaration>
 		<location id="id16" x="-229" y="-119">
@@ -859,30 +849,30 @@ void takeTask() {
 			<name x="-349" y="110">Releasing_task</name>
 			<committed/>
 		</location>
-		<location id="id19" x="-391" y="-195">
-			<name x="-401" y="-229">SettingUp</name>
+		<location id="id19" x="-365" y="-255">
+			<name x="-399" y="-323">SettingUp</name>
 			<committed/>
 		</location>
 		<init ref="id19"/>
 		<transition>
 			<source ref="id19"/>
 			<target ref="id16"/>
-			<label kind="assignment" x="-391" y="-178">t = 0,
+			<label kind="assignment" x="-408" y="-221">t = 0,
 settingUp(),
 computeDelay()</label>
 		</transition>
 		<transition>
 			<source ref="id18"/>
 			<target ref="id16"/>
-			<label kind="synchronisation" x="-408" y="-34">releaseTask!</label>
-			<label kind="assignment" x="-408" y="-17">takeTask()</label>
+			<label kind="synchronisation" x="-425" y="-51">releaseTask!</label>
+			<label kind="assignment" x="-425" y="-34">takeTask()</label>
 			<nail x="-323" y="-34"/>
 		</transition>
 		<transition>
 			<source ref="id16"/>
 			<target ref="id18"/>
 			<label kind="synchronisation" x="-204" y="-8">claim?</label>
-			<label kind="assignment" x="-221" y="8">actualRobotId = synchronizationRequest</label>
+			<label kind="assignment" x="-204" y="8">actualRobotId = synchronizationRequest</label>
 			<nail x="-212" y="0"/>
 		</transition>
 		<transition>
