@@ -108,10 +108,10 @@ broadcast chan takeItem, go;
 broadcast chan claim, releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
-		<declaration>int[0, NUM_OF_ROBOTS - 1] nextId;
+		<declaration>int[-1, NUM_OF_ROBOTS - 1] nextId;
 </declaration>
 		<location id="id0" x="-59" y="221">
-			<name x="-144" y="212">initial_state</name>
+			<name x="-161" y="212">initial_state</name>
 		</location>
 		<location id="id1" x="348" y="221">
 			<name x="373" y="212">SomeoneTryingToMove</name>
@@ -397,7 +397,7 @@ void greedyBestDir(position p, position&amp; posArray[4]){
 /*     Path finding Algorithm (Backtracking)    */
 /************************************************/
 
-void findPath(position&amp; path[N*M], bool reroute){
+bool findPath(position&amp; nextMove[1], bool reroute){
     // Queue needed to seach the entire matrix
     position queue[N*M];
     // Current queue length
@@ -414,8 +414,6 @@ void findPath(position&amp; path[N*M], bool reroute){
     
     // Initialize visited matrix
     for(i=0; i&lt;N; i++){ for(j=0; j&lt;M; j++){ visited[i][j] = false; } }
-    // Reset path
-    for(i=0; i&lt;N*M; i++) { path[i] = NULL; }
 
     // Given that it was outside of the grid, set the robot on entryPoint
     if(currentPosition == nullPosition) { curPos = entryPoint; }
@@ -460,18 +458,43 @@ void findPath(position&amp; path[N*M], bool reroute){
     }
 
     if(found){
-        // Copy the queue from element 1 (0 element is useless as it is the current position)
-        for(i=1; i&lt;len; i++){ path[i - 1] = queue[i]; }
-    } else { noPossibleMoves = true; }
+        // Copy next move
+        nextMove[0] = queue[1];
+        return true;
+    } else { return false; }
 }
 
 position getNextMove(bool reroute){
     int i;
-    position path[N*M];
-    for(i=0; i&lt;N*M; i++) { path[i] = NULL; }
+    position nextMove[1], dir = UP, close;
+    bool existPath;
+    
+    // Initialize nextMove
+    nextMove[0] = nullPosition;
+    
+    // Can a path be established?
+    existPath = findPath(nextMove, reroute);
+    
+    // If a path exists, then return the next move
+    if(existPath) { return nextMove[0]; }
+    else {
+        // If any direction near the currePosition is free, just move in that direction.
+        // This is done to eliminate possible deadlocks (random movement if no path may 
+        // free some space needed by another robot)
+        for(i=0; i&lt;4; i++){
+            // Generate a close position
+            close = addPos(currentPosition, dir);
+            // If it feasible (= no robot &amp;&amp; no pod if the robot is moving one) then move in that direction!
+            if(isFeasible(close, true)){ return close; }
+            // No luck for now, change direction
+            dir = getNextDir(dir);
+        }
 
-    findPath(path, reroute);
-    return path[0];
+        // No near position was feasible, so you're BLOCKED!!11!1!!!1!!
+        noPossibleMoves = true;
+        // Return a fictious position
+        return nullPosition;
+    }
 }</declaration>
 		<location id="id4" x="289" y="459">
 			<name x="255" y="485">DecideAction</name>
@@ -776,7 +799,7 @@ void takeTask() {
 }</declaration>
 		<location id="id14" x="-229" y="-119">
 			<name x="-239" y="-153">Idle</name>
-			<label kind="invariant" x="-246" y="-170">t &lt;= 10</label>
+			<label kind="invariant" x="-246" y="-170">t &lt;= 30</label>
 		</location>
 		<location id="id15" x="34" y="-119">
 			<name x="51" y="-127">Adding_task</name>
@@ -823,7 +846,7 @@ computeDelay()</label>
 		<transition>
 			<source ref="id14"/>
 			<target ref="id15"/>
-			<label kind="guard" x="-119" y="-204">t &gt;= 10</label>
+			<label kind="guard" x="-119" y="-204">t &gt;= 30</label>
 			<nail x="-93" y="-178"/>
 		</transition>
 	</template>
