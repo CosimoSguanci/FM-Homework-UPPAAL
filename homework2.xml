@@ -167,6 +167,7 @@ computeDelay()</label>
 		<declaration>clock t;
 int countPod = 1;
 int totalTime = 0;
+int numTasks = 0;
 clock p;
 // Notable positions that the robot must remember
 position currentPosition = nullPosition;
@@ -603,7 +604,7 @@ t=0</label>
 			<label kind="guard" x="-535" y="467">target == BACK_TO_POD &amp;&amp;
 currentPosition == currentPodPosition</label>
 			<label kind="assignment" x="-535" y="501">releasePod(), robotTask[id] = nullPosition,
-countPod++, totalTime += fint(p)</label>
+countPod++, totalTime += fint(p), numTasks++</label>
 			<nail x="-671" y="450"/>
 		</transition>
 		<transition>
@@ -857,10 +858,10 @@ semaphore = Semaphore();
 
 
 // Low probability of losing a task
-system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
+//system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 
 // High probability of losing a task
-//system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
+system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 </system>
 	<queries>
 		<query>
@@ -888,7 +889,7 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula></formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 5 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 5 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 5))</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -913,6 +914,10 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 		</query>
 		<query>
 			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 125 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 125 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 125 ) )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_HIGH.numTasks - r1_HIGH.numTasks) &gt; 5 or abs(r0_HIGH.numTasks - r2_HIGH.numTasks) &gt; 5 or abs(r1_HIGH.numTasks - r2_HIGH.numTasks) &gt; 5))</formula>
 			<comment></comment>
 		</query>
 	</queries>
