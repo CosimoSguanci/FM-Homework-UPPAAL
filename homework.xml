@@ -140,7 +140,7 @@ myMove[nextId] = true</label>
 		<declaration>clock t;
 int delay;
 
-void computeDelay() { delay = abs(fint(Normal(mean, stdDev)); }</declaration>
+void computeDelay() { delay = abs(fint(Normal(mean, stdDev))); }</declaration>
 		<location id="id2" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
 		</location>
