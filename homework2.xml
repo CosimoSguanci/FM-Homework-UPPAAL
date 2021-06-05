@@ -877,7 +877,15 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
+			<formula>Mandatory property</formula>
+			<comment></comment>
+		</query>
+		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_LOW.exploded == true)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -886,6 +894,10 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 		</query>
 		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 23 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 23 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 23))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -913,7 +925,15 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
+			<formula>Mandatory property</formula>
+			<comment></comment>
+		</query>
+		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_HIGH.exploded == true)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -922,6 +942,10 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 		</query>
 		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_HIGH.numTasks - r1_HIGH.numTasks) &gt; 15 or abs(r0_HIGH.numTasks - r2_HIGH.numTasks) &gt; 15 or abs(r1_HIGH.numTasks - r2_HIGH.numTasks) &gt; 15))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>

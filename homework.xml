@@ -169,7 +169,10 @@ computeDelay()</label>
 		<name>Robot</name>
 		<parameter>int id, int K, int lambda</parameter>
 		<declaration>clock t;
-
+int countPod = 1;
+int totalTime = 0;
+int numTasks = 0;
+clock p;
 // Notable positions that the robot must remember
 position currentPosition = nullPosition;
 position currentPodPosition = nullPosition;
@@ -548,7 +551,7 @@ t = 0, myMove[id] = false</label>
 			<source ref="id12"/>
 			<target ref="id6"/>
 			<label kind="guard" x="17" y="-161">currentPosition != goal</label>
-			<label kind="assignment" x="76" y="-144">t = 0</label>
+			<label kind="assignment" x="76" y="-144">t = 0, p = 0</label>
 			<nail x="93" y="-127"/>
 		</transition>
 		<transition>
@@ -563,7 +566,7 @@ t = 0, myMove[id] = false</label>
 			<label kind="guard" x="-17" y="-59">currentPosition == goal</label>
 			<label kind="assignment" x="-17" y="-42">takePod(),
 updateTarget(TO_DELIVERY),
-t=0</label>
+t = 0, p = 0</label>
 		</transition>
 		<transition>
 			<source ref="id6"/>
@@ -605,7 +608,8 @@ t=0</label>
 			<target ref="id9"/>
 			<label kind="guard" x="-535" y="467">target == BACK_TO_POD &amp;&amp;
 currentPosition == currentPodPosition</label>
-			<label kind="assignment" x="-535" y="501">releasePod(), robotTask[id] = nullPosition</label>
+			<label kind="assignment" x="-535" y="501">releasePod(), robotTask[id] = nullPosition,
+countPod++, totalTime += fint(p), numTasks++</label>
 			<nail x="-671" y="450"/>
 		</transition>
 		<transition>
@@ -859,14 +863,14 @@ semaphore = Semaphore();
 
 
 // Low probability of losing a task
-system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
+//system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 
 // High probability of losing a task
-//system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
+system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 </system>
 	<queries>
 		<query>
-			<formula>**** Before trying to check anything, please take a look at the System Declarations ***</formula>
+			<formula>**** Before trying to check anything, please take a look at the System Declarations and set epsilon = 0.025 ***</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -878,6 +882,10 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
+			<formula>Mandatory property</formula>
+			<comment></comment>
+		</query>
+		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_LOW.exploded == true)</formula>
 			<comment></comment>
 		</query>
@@ -886,11 +894,27 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula></formula>
+			<formula>2nd property</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 23 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 23 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 23))</formula>
 			<comment></comment>
 		</query>
 		<query>
 			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>3rd property</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;( 45 &lt; (r0_LOW.totalTime/r0_LOW.countPod) and 45 &lt; (r1_LOW.totalTime/r1_LOW.countPod) and 45 &lt; (r2_LOW.totalTime/r2_LOW.countPod) ) )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000]([]((r0_LOW.totalTime/r0_LOW.countPod) &lt; 70 and (r1_LOW.totalTime/r1_LOW.countPod) &lt; 70 and (r2_LOW.totalTime/r2_LOW.countPod) &lt; 70 ) )</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -902,7 +926,39 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
+			<formula>Mandatory property</formula>
+			<comment></comment>
+		</query>
+		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_HIGH.exploded == true)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>2nd property</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 23 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 23 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 23))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>3rd property</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 190 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 190 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 190 ) )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;( 160 &lt; (r0_HIGH.totalTime/r0_HIGH.countPod) and 160 &lt; (r1_HIGH.totalTime/r1_HIGH.countPod) and 160 &lt; (r2_HIGH.totalTime/r2_HIGH.countPod) ) )</formula>
 			<comment></comment>
 		</query>
 	</queries>
