@@ -846,7 +846,7 @@ r0_HIGH = Robot(0, 2, 2);
 r1_HIGH = Robot(1, 2, 2);
 r2_HIGH = Robot(2, 2, 2);
 
-taskManager_HIGH = TaskManager(40.0, 2.5);
+taskManager_HIGH = TaskManager(42.0, 2.5);
 
 
 // The semaphore is the same in both systems
