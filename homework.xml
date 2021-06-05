@@ -110,45 +110,42 @@ broadcast chan claim, releaseTask;</declaration>
 		<name>Semaphore</name>
 		<declaration>int[-1, NUM_OF_ROBOTS - 1] nextId;
 </declaration>
-		<location id="id0" x="-59" y="221">
-			<name x="-161" y="212">initial_state</name>
+		<location id="id0" x="68" y="221">
+			<name x="-51" y="212">WaitingForMove</name>
 		</location>
-		<location id="id1" x="348" y="221">
-			<name x="373" y="212">SomeoneTryingToMove</name>
+		<location id="id1" x="255" y="221">
+			<name x="280" y="212">SomeoneTryingToMove</name>
 			<committed/>
 		</location>
 		<init ref="id0"/>
 		<transition>
 			<source ref="id1"/>
 			<target ref="id0"/>
-			<label kind="synchronisation" x="127" y="119">move!</label>
-			<label kind="assignment" x="119" y="136">nextId = -1</label>
-			<nail x="144" y="161"/>
+			<label kind="synchronisation" x="136" y="119">move!</label>
+			<label kind="assignment" x="127" y="136">nextId = -1</label>
+			<nail x="161" y="161"/>
 		</transition>
 		<transition>
 			<source ref="id0"/>
 			<target ref="id1"/>
-			<label kind="synchronisation" x="102" y="306">tryingToMove?</label>
-			<label kind="assignment" x="85" y="323">nextId = nextRobotId,
+			<label kind="synchronisation" x="119" y="280">tryingToMove?</label>
+			<label kind="assignment" x="102" y="297">nextId = nextRobotId,
 myMove[nextId] = true</label>
-			<nail x="144" y="297"/>
+			<nail x="161" y="280"/>
 		</transition>
 	</template>
 	<template>
 		<name>Human</name>
 		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
-
 int delay;
 
-void computeDelay() {
-    delay = fint(Normal(mean, stdDev));
-}</declaration>
+void computeDelay() { delay = abs(fint(Normal(mean, stdDev)); }</declaration>
 		<location id="id2" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
 		</location>
 		<location id="id3" x="-42" y="-85">
-			<name x="-52" y="-119">Taking_item</name>
+			<name x="-52" y="-119">TakingItem</name>
 			<label kind="invariant" x="-52" y="-68">t &lt;= delay</label>
 		</location>
 		<init ref="id2"/>
@@ -515,7 +512,7 @@ position getNextMove(bool reroute){
 			<name x="-476" y="25">ClaimingTask</name>
 		</location>
 		<location id="id9" x="-671" y="8">
-			<name x="-714" y="-8">idle</name>
+			<name x="-714" y="-8">Idle</name>
 			<label kind="exponentialrate" x="-739" y="8">lambda</label>
 		</location>
 		<location id="id10" x="-340" y="-68">
@@ -660,7 +657,7 @@ t = 0</label>
 int delay;
 
 // Sample delay from normal distribution
-void computeDelay() { delay = fint(Normal(mean, stdDev)); }
+void computeDelay() { delay = abs(fint(Normal(mean, stdDev))); }
 
 //this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
 position tasks[MAX_TASK];
@@ -793,11 +790,11 @@ void takeTask() {
 			<label kind="invariant" x="-255" y="-85">t &lt;= delay</label>
 		</location>
 		<location id="id14" x="-544" y="-119">
-			<name x="-595" y="-162">Releasing_task</name>
+			<name x="-595" y="-162">ReleasingTask</name>
 			<committed/>
 		</location>
 		<location id="id15" x="-229" y="-272">
-			<name x="-263" y="-340">SettingUp</name>
+			<name x="-255" y="-306">SettingUp</name>
 			<committed/>
 		</location>
 		<init ref="id15"/>
@@ -833,46 +830,79 @@ computeDelay(), t = 0</label>
 			<nail x="-51" y="-59"/>
 		</transition>
 	</template>
-	<system>// Place template instantiations here.
-h = Human(10.0, 1.5);
-r0 = Robot(0, 1, 2);
-r1 = Robot(1, 1, 2);
-r2 = Robot(2, 1, 2);
+	<system>// Configuration LOW
+h_LOW = Human(12.0, 1.5);
 
-taskManager = TaskManager(80.0, 2.5);
+r0_LOW = Robot(0, 1, 2);
+r1_LOW = Robot(1, 1, 2);
+r2_LOW = Robot(2, 1, 2);
 
+taskManager_LOW = TaskManager(70.0, 2.5);
+
+// Configuration HIGH
+h_HIGH = Human(18.0, 1.5);
+
+r0_HIGH = Robot(0, 2, 2);
+r1_HIGH = Robot(1, 2, 2);
+r2_HIGH = Robot(2, 2, 2);
+
+taskManager_HIGH = TaskManager(40.0, 2.5);
+
+
+// The semaphore is the same in both systems
 semaphore = Semaphore();
 
-// List one or more processes to be composed into a system.
-system r0, r1, r2, taskManager, h, semaphore;
+
+/****************************       ATTENTION!       ****************************/
+// To run one system, please decomment the desired system and comment the undesired one
+// After this, symply run all the related properties in the verifier
+
+
+// Low probability of losing a task
+system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
+
+// High probability of losing a task
+//system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 </system>
 	<queries>
 		<query>
-			<formula>A[] not deadlock</formula>
+			<formula>**** Before trying to check anything, please take a look at the System Declarations ***</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt;(g &lt; 100 &amp;&amp; deadlock)</formula>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt;(taskManager.exploded == true)</formula>
+			<formula>********  This is for configuration A  ********</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>E&lt;&gt;(taskManager.actualLength == 25)</formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_a.exploded == true)</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=5](&lt;&gt;h.Taking_item)</formula>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager.exploded == true)</formula>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager.actualLength &gt; 2)</formula>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>********  This is for configuration B  ********</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_b.exploded == true)</formula>
 			<comment></comment>
 		</query>
 	</queries>

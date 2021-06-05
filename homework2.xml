@@ -107,7 +107,7 @@ broadcast chan claim, releaseTask;</declaration>
 		<declaration>int[-1, NUM_OF_ROBOTS - 1] nextId;
 </declaration>
 		<location id="id0" x="34" y="229">
-			<name x="-68" y="220">InitialState</name>
+			<name x="-85" y="221">WaitingForMove</name>
 		</location>
 		<location id="id1" x="263" y="229">
 			<name x="288" y="220">SomeoneTryingToMove</name>
@@ -134,12 +134,9 @@ myMove[nextId] = true</label>
 		<name>Human</name>
 		<parameter>double mean, double stdDev</parameter>
 		<declaration>clock t;
-
 int delay;
 
-void computeDelay() {
-    delay = fint(Normal(mean, stdDev));
-}</declaration>
+void computeDelay() { delay = abs(fint(Normal(mean, stdDev))); }</declaration>
 		<location id="id2" x="-229" y="-85">
 			<name x="-272" y="-102">Idle</name>
 		</location>
@@ -828,22 +825,79 @@ computeDelay(), t = 0</label>
 			<nail x="-51" y="-59"/>
 		</transition>
 	</template>
-	<system>// Place template instantiations here.
-h = Human(20.0, 1.5);
-r0 = Robot(0, 4, 2);
-r1 = Robot(1, 4, 2);
-r2 = Robot(2, 4, 2);
+	<system>// Configuration A (low probability)
+h_a = Human(12.0, 1.5);
 
-taskManager = TaskManager(35.0, 2.5);
+r0_a = Robot(0, 2, 2);
+r1_a = Robot(1, 2, 2);
+r2_a = Robot(2, 2, 2);
 
+taskManager_a = TaskManager(38.0, 2.5);
+
+// Configuration B (high probability)
+h_b = Human(20.0, 1.5);
+
+r0_b = Robot(0, 4, 2);
+r1_b = Robot(1, 4, 2);
+r2_b = Robot(2, 4, 2);
+
+taskManager_b = TaskManager(35.0, 2.5);
+
+
+// The semaphore is equal in both systems
 semaphore = Semaphore();
 
-// List one or more processes to be composed into a system.
-system r0, r1, r2, taskManager, h, semaphore;
+
+/****************************       ATTENTION!       ****************************/
+// To run one system or the other, please decomment the desired system and comment the undesired one
+// After this, symply run all the properties in the verifier
+
+
+// Low probability of losing a task
+system r0_a, r1_a, r2_a, taskManager_a, h_a, semaphore;
+
+// High probability of losing a task
+//system r0_b, r1_b, r2_b, taskManager_b, h_b, semaphore;
 </system>
 	<queries>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager.exploded == true)</formula>
+			<formula>**** Before trying to check anything, please take a look at the System Declarations ****</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>********  This is for configuration A  ********</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_a.exploded == true)</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula></formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>********  This is for configuration B  ********</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_b.exploded == true)</formula>
 			<comment></comment>
 		</query>
 	</queries>
