@@ -881,15 +881,23 @@ system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000]([]((r0_LOW.totalTime/r0_LOW.countPod) &lt; 80 and (r1_LOW.totalTime/r1_LOW.countPod) &lt; 80 and (r2_LOW.totalTime/r2_LOW.countPod) &lt; 80 ) )</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>Pr[&lt;=10000]([]((r0_LOW.totalTime/r0_LOW.countPod) &lt; 60 and (r1_LOW.totalTime/r1_LOW.countPod) &lt; 60 and (r2_LOW.totalTime/r2_LOW.countPod) &lt; 60 ) )</formula>
+			<formula>2nd property</formula>
 			<comment></comment>
 		</query>
 		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 5 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 5 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 5))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>3rd property</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;( 45 &lt; (r0_LOW.totalTime/r0_LOW.countPod) and 45 &lt; (r1_LOW.totalTime/r1_LOW.countPod) and 45 &lt; (r2_LOW.totalTime/r2_LOW.countPod) ) )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000]([]((r0_LOW.totalTime/r0_LOW.countPod) &lt; 70 and (r1_LOW.totalTime/r1_LOW.countPod) &lt; 70 and (r2_LOW.totalTime/r2_LOW.countPod) &lt; 70 ) )</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -909,15 +917,23 @@ system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 150 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 150 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 150 ) )</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 125 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 125 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 125 ) )</formula>
+			<formula>2nd property</formula>
 			<comment></comment>
 		</query>
 		<query>
 			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_HIGH.numTasks - r1_HIGH.numTasks) &gt; 5 or abs(r0_HIGH.numTasks - r2_HIGH.numTasks) &gt; 5 or abs(r1_HIGH.numTasks - r2_HIGH.numTasks) &gt; 5))</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>3rd property</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 145 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 145 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 145 ) )</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;( 90 &lt; (r0_HIGH.totalTime/r0_HIGH.countPod) and 90 &lt; (r1_HIGH.totalTime/r1_HIGH.countPod) and 90 &lt; (r2_HIGH.totalTime/r2_HIGH.countPod) ) )</formula>
 			<comment></comment>
 		</query>
 	</queries>

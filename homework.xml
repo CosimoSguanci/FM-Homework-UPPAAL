@@ -831,13 +831,13 @@ computeDelay(), t = 0</label>
 		</transition>
 	</template>
 	<system>// Configuration LOW
-h_LOW = Human(12.0, 1.5);
+h_LOW = Human(11.0, 1.5);
 
 r0_LOW = Robot(0, 1, 2);
 r1_LOW = Robot(1, 1, 2);
 r2_LOW = Robot(2, 1, 2);
 
-taskManager_LOW = TaskManager(70.0, 2.5);
+taskManager_LOW = TaskManager(64.0, 2.5);
 
 // Configuration HIGH
 h_HIGH = Human(18.0, 1.5);
