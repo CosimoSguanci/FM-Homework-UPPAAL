@@ -825,23 +825,23 @@ computeDelay(), t = 0</label>
 			<nail x="-51" y="-59"/>
 		</transition>
 	</template>
-	<system>// Configuration A (low probability)
-h_a = Human(12.0, 1.5);
+	<system>// Configuration LOW
+h_LOW = Human(12.0, 1.5);
 
-r0_a = Robot(0, 2, 2);
-r1_a = Robot(1, 2, 2);
-r2_a = Robot(2, 2, 2);
+r0_LOW = Robot(0, 2, 2);
+r1_LOW = Robot(1, 2, 2);
+r2_LOW = Robot(2, 2, 2);
 
-taskManager_a = TaskManager(38.0, 2.5);
+taskManager_LOW = TaskManager(38.0, 2.5);
 
-// Configuration B (high probability)
-h_b = Human(20.0, 1.5);
+// Configuration HIGH
+h_HIGH = Human(20.0, 1.5);
 
-r0_b = Robot(0, 4, 2);
-r1_b = Robot(1, 4, 2);
-r2_b = Robot(2, 4, 2);
+r0_HIGH = Robot(0, 4, 2);
+r1_HIGH = Robot(1, 4, 2);
+r2_HIGH = Robot(2, 4, 2);
 
-taskManager_b = TaskManager(35.0, 2.5);
+taskManager_HIGH = TaskManager(35.0, 2.5);
 
 
 // The semaphore is equal in both systems
@@ -854,10 +854,10 @@ semaphore = Semaphore();
 
 
 // Low probability of losing a task
-system r0_a, r1_a, r2_a, taskManager_a, h_a, semaphore;
+system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 
 // High probability of losing a task
-//system r0_b, r1_b, r2_b, taskManager_b, h_b, semaphore;
+//system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 </system>
 	<queries>
 		<query>
@@ -869,15 +869,11 @@ system r0_a, r1_a, r2_a, taskManager_a, h_a, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>********  This is for configuration A  ********</formula>
+			<formula>********  This is for configuration LOW  ********</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_a.exploded == true)</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula></formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_LOW.exploded == true)</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -893,11 +889,15 @@ system r0_a, r1_a, r2_a, taskManager_a, h_a, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>********  This is for configuration B  ********</formula>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_b.exploded == true)</formula>
+			<formula>********  This is for configuration HIGH  ********</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_HIGH.exploded == true)</formula>
 			<comment></comment>
 		</query>
 	</queries>

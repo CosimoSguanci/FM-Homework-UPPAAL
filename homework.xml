@@ -874,15 +874,11 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>********  This is for configuration A  ********</formula>
+			<formula>********  This is for configuration LOW  ********</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_a.exploded == true)</formula>
-			<comment></comment>
-		</query>
-		<query>
-			<formula></formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_LOW.exploded == true)</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -898,11 +894,15 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>********  This is for configuration B  ********</formula>
+			<formula></formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_b.exploded == true)</formula>
+			<formula>********  This is for configuration HIGH  ********</formula>
+			<comment></comment>
+		</query>
+		<query>
+			<formula>Pr[&lt;=10000](&lt;&gt;taskManager_HIGH.exploded == true)</formula>
 			<comment></comment>
 		</query>
 	</queries>
