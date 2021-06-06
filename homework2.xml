@@ -917,10 +917,6 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula></formula>
-			<comment></comment>
-		</query>
-		<query>
 			<formula>********  This is for configuration HIGH  ********</formula>
 			<comment></comment>
 		</query>

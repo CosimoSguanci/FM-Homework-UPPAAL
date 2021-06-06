@@ -863,10 +863,10 @@ semaphore = Semaphore();
 
 
 // Low probability of losing a task
-//system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
+system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 
 // High probability of losing a task
-system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
+//system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 </system>
 	<queries>
 		<query>
@@ -898,7 +898,7 @@ system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 23 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 23 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 23))</formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 28 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 28 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 28))</formula>
 			<comment></comment>
 		</query>
 		<query>
@@ -942,7 +942,7 @@ system r0_HIGH, r1_HIGH, r2_HIGH, taskManager_HIGH, h_HIGH, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_LOW.numTasks - r1_LOW.numTasks) &gt; 23 or abs(r0_LOW.numTasks - r2_LOW.numTasks) &gt; 23 or abs(r1_LOW.numTasks - r2_LOW.numTasks) &gt; 23))</formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;(abs(r0_HIGH.numTasks - r1_HIGH.numTasks) &gt; 15 or abs(r0_HIGH.numTasks - r2_HIGH.numTasks) &gt; 15 or abs(r1_HIGH.numTasks - r2_HIGH.numTasks) &gt; 15))</formula>
 			<comment></comment>
 		</query>
 		<query>
