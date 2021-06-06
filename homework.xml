@@ -108,7 +108,8 @@ broadcast chan takeItem, go;
 broadcast chan claim, releaseTask;</declaration>
 	<template>
 		<name>Semaphore</name>
-		<declaration>int[-1, NUM_OF_ROBOTS - 1] nextId;
+		<declaration>// Robot Id that is trying to move 
+int[-1, NUM_OF_ROBOTS - 1] nextId;
 </declaration>
 		<location id="id0" x="68" y="221">
 			<name x="-51" y="212">WaitingForMove</name>
@@ -168,11 +169,17 @@ computeDelay()</label>
 	<template>
 		<name>Robot</name>
 		<parameter>int id, int K, int lambda</parameter>
-		<declaration>clock t;
-int countPod = 1;
+		<declaration>// General robot clock
+clock t;
+// Record total time spent on completing tasks
 int totalTime = 0;
+// Completed number of task (needed for 2nd property)
 int numTasks = 0;
+// Completed number of task (needed for 3rd property)
+int countPod = 1;
+// Clock used to monitor time spent on completing tasks
 clock p;
+
 // Notable positions that the robot must remember
 position currentPosition = nullPosition;
 position currentPodPosition = nullPosition;
@@ -663,16 +670,16 @@ int delay;
 // Sample delay from normal distribution
 void computeDelay() { delay = abs(fint(Normal(mean, stdDev))); }
 
-//this is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
+// This is a queue which works with a FIFO policy, where MAX_T is the maximum number of tasks settable
 position tasks[MAX_TASK];
-//to keep track of the actual number of task present in the tasks array
+// To keep track of the actual number of task present in the tasks array
 int[0, MAX_TASK] actualLength;
-//here there is the id of the robot which has claimed a task
+// Here there is the id of the robot which has claimed a task
 int[-1,NUM_OF_ROBOTS] actualRobotId;
-//used to signal if the max capacity of the array is reached
+// Used to signal if the max capacity of the array is reached
 bool exploded;
 
-//to initialize every local variable
+// To initialize every local variable
 void settingUp() {
     int i;
     for (i=0; i&lt;MAX_TASK; i++) { tasks[i] = nullPosition; }
@@ -681,7 +688,7 @@ void settingUp() {
     exploded = false;
 }
 
-//This verify if the pod in input is present in the queue checking all the tasks array (if it is the case)
+// This verify if the pod in input is present in the queue checking all the tasks array (if it is the case)
 bool podIsInTasks(pod myPod) {
     int i;
     for (i = 0; i &lt; actualLength; i++) {
@@ -690,6 +697,7 @@ bool podIsInTasks(pod myPod) {
     return false;
 }
 
+// Check if the pod is already assigned to a robot
 bool podIsAssigned(pod myPod) {
     int i;
     for (i = 0; i &lt; NUM_OF_ROBOTS; i++) {
@@ -698,7 +706,7 @@ bool podIsAssigned(pod myPod) {
     return false;
 }
 
-//find another "random" number adding 1 to the previous random number, keeping attention to the NUM_OF_PODS present in the layout
+// Find another "random" number adding 1 to the previous random number, keeping attention to the NUM_OF_PODS present in the layout
 int anotherTmp(int tmp) {
     int myTmp = tmp;
     if (tmp == NUM_OF_PODS - 1)
@@ -708,9 +716,9 @@ int anotherTmp(int tmp) {
     return myTmp;
 }
 
-//returning the position of the selected pod from the global pods array
-//if it is not already in the tasks array and if it is not taken (a robot has taken it)
-//else continuing searching until finding a pod to add as a task (this could be a potential problem...)
+// Returning the position of the selected pod from the global pods array
+// If it is not already in the tasks array and if it is not taken (a robot has taken it)
+// Else continuing searching until finding a pod to add as a task
 position selectAPod(int tmp) {
     int myTmp = tmp, i;
     position newPos = {-1, -1};
@@ -734,6 +742,7 @@ position selectAPod(int tmp) {
     return newPos;
 }
 
+// Get the number of pods already assigned to a robot
 int getNumOfAssignedPods() {
     int num = 0, i;
 
@@ -743,18 +752,18 @@ int getNumOfAssignedPods() {
     return num;
 }
 
-//selecting a position which corresponding to a free pod using the random value in input
-//adding it as task in the tasks array, updating the true length of it
+// Selecting a position which corresponding to a free pod using the random value in input
+// adding it as task in the tasks array, updating the true length of it
 void addTask(int randomValue) {
      
-    //every pods is tasked
+    // Every pods is tasked
     if ((actualLength + getNumOfAssignedPods()) &gt;= NUM_OF_PODS) {
         exploded = true; // tried to add, but no pods are available, so I lost the task
         return;
     }
     
     
-    //the array has reached the max length possible?
+    // The array has reached the max length possible?
     if (actualLength &lt; MAX_TASK) {
         position taskPos = selectAPod(randomValue);
         tasks[actualLength] = taskPos;
@@ -765,7 +774,7 @@ void addTask(int randomValue) {
 
 //-----------------------------------------------------------------------------------------------
 
-//extracting a position of a pod with a FIFO policy
+// Extracting a position of a pod with a FIFO policy
 position extractFIFO() {
     position tmp = tasks[0];
     int i = 1;
@@ -778,9 +787,9 @@ position extractFIFO() {
     return tmp;
 }
 
-//estract a task from the queue and insert it in the robotTask array in the position represented by actualRobotId
+// Extract a task from the queue and insert it in the robotTask array in the position represented by actualRobotId
 void takeTask() {
-    //if there is no task, TM will not set a position for the robot
+    // If there is no task, TM will not set a position for the robot
     if (actualLength != 0) {
         position ext;
         ext = extractFIFO();
@@ -906,15 +915,15 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>3rd property</formula>
+			<formula>3rd property (change statical parameter epsilon to 0.075 only for this property)</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;( 45 &lt; (r0_LOW.totalTime/r0_LOW.countPod) and 45 &lt; (r1_LOW.totalTime/r1_LOW.countPod) and 45 &lt; (r2_LOW.totalTime/r2_LOW.countPod) ) )</formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;( 35 &lt; (r0_LOW.totalTime/r0_LOW.countPod) and 35 &lt; (r1_LOW.totalTime/r1_LOW.countPod) and 35 &lt; (r2_LOW.totalTime/r2_LOW.countPod) ) )</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000]([]((r0_LOW.totalTime/r0_LOW.countPod) &lt; 70 and (r1_LOW.totalTime/r1_LOW.countPod) &lt; 70 and (r2_LOW.totalTime/r2_LOW.countPod) &lt; 70 ) )</formula>
+			<formula>Pr[&lt;=10000]([]((r0_LOW.totalTime/r0_LOW.countPod) &lt; 95 and (r1_LOW.totalTime/r1_LOW.countPod) &lt; 95 and (r2_LOW.totalTime/r2_LOW.countPod) &lt; 95 ) )</formula>
 			<comment></comment>
 		</query>
 		<query>
