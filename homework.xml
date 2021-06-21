@@ -959,15 +959,15 @@ system r0_LOW, r1_LOW, r2_LOW, taskManager_LOW, h_LOW, semaphore;
 			<comment></comment>
 		</query>
 		<query>
-			<formula>3rd property</formula>
+			<formula>3rd property (change statical parameter epsilon to 0.075 only for this property)</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 190 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 190 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 190 ) )</formula>
+			<formula>Pr[&lt;=10000]([]((r0_HIGH.totalTime/r0_HIGH.countPod) &lt; 130 and (r1_HIGH.totalTime/r1_HIGH.countPod) &lt; 130 and (r2_HIGH.totalTime/r2_HIGH.countPod) &lt; 130 ) )</formula>
 			<comment></comment>
 		</query>
 		<query>
-			<formula>Pr[&lt;=10000](&lt;&gt;( 160 &lt; (r0_HIGH.totalTime/r0_HIGH.countPod) and 160 &lt; (r1_HIGH.totalTime/r1_HIGH.countPod) and 160 &lt; (r2_HIGH.totalTime/r2_HIGH.countPod) ) )</formula>
+			<formula>Pr[&lt;=10000](&lt;&gt;( 35 &lt; (r0_HIGH.totalTime/r0_HIGH.countPod) and 35 &lt; (r1_HIGH.totalTime/r1_HIGH.countPod) and 35 &lt; (r2_HIGH.totalTime/r2_HIGH.countPod) ) )</formula>
 			<comment></comment>
 		</query>
 	</queries>
