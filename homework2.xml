@@ -504,7 +504,7 @@ position getNextMove(bool reroute){
 			<committed/>
 		</location>
 		<location id="id5" x="892" y="-68">
-			<name x="909" y="-85">WaitingGreenLight</name>
+			<name x="909" y="-85">DecideMove</name>
 			<committed/>
 		</location>
 		<location id="id6" x="297" y="-68">
@@ -526,7 +526,7 @@ position getNextMove(bool reroute){
 			<committed/>
 		</location>
 		<location id="id11" x="544" y="-68">
-			<name x="510" y="-102">DecideMove</name>
+			<name x="493" y="-102">WaitingGreenLight</name>
 		</location>
 		<location id="id12" x="-85" y="-68">
 			<committed/>
